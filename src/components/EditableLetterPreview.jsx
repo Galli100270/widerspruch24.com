@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Edit3, Save } from 'lucide-react';
 import { format } from 'date-fns';
 import { de, enGB } from 'date-fns/locale';
@@ -192,7 +192,7 @@ const EditableLetterPreview = ({
     if (isEditing && !isFullLetter && caseData) {
       setEditableText(buildFullLetterHTML());
     }
-   
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing]);
 
   const handleSave = () => {
@@ -300,7 +300,6 @@ const EditableLetterPreview = ({
           position: 'relative' // Needed for absolute positioning of children
         }}
         onContextMenu={(e) => { if (!isEditing) e.preventDefault(); }}
-        onSelectStart={(e) => { if (!isEditing) e.preventDefault(); }}
         onDragStart={(e) => { if (!isEditing) e.preventDefault(); }}
       >
         {/* Absenderzeile für Fensterumschlag (Position nach DIN 5008) */}

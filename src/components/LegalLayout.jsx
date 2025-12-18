@@ -135,7 +135,7 @@ export default function LegalLayout({ title, children }) {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .legal-prose {
           font-size: calc(1.05rem * var(--legal-font-scale, 1));
           line-height: 1.8;
