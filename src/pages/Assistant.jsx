@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { agentSDK } from '@/agents';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Send, MessageCircle, Bot, Loader2, Plus, ExternalLink, Smartphone } from 'lucide-react';
+import { Send, MessageCircle, Bot, User as UserIcon, Loader2, Plus, ExternalLink, Smartphone } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLocalization } from '@/components/hooks/useLocalization';
 import MessageBubble from '@/components/MessageBubble';
@@ -125,17 +124,21 @@ export default function Assistant() {
   };
 
   const quickActions = [
-    { 
-      label: 'Website-Hilfe', 
-      message: 'Ich habe ein Problem mit der Website. Können Sie mir bei den Funktionen helfen?' 
+    {
+      label: 'Fallstatus',
+      message: 'Wie ist der Status von Fall W24-XXXX? (Bitte Fall-Nummer einsetzen)'
     },
-    { 
-      label: 'Fall analysieren', 
-      message: 'Können Sie sich meinen aktuellen Widerspruchsfall ansehen und eine fachliche Einschätzung geben?' 
+    {
+      label: 'Frist prüfen',
+      message: 'Was ist die Frist für Fall W24-XXXX? (Bitte Fall-Nummer einsetzen)'
     },
-    { 
-      label: 'Rechtsfrage', 
-      message: 'Ich habe eine rechtliche Frage zu meinem Bescheid. Können Sie mir helfen?' 
+    {
+      label: 'Widerspruch erstellen',
+      message: 'Erstelle bitte einen Widerspruch für Fall W24-XXXX. (Bitte Fall-Nummer einsetzen)'
+    },
+    {
+      label: 'Website-Hilfe',
+      message: 'Ich habe ein Problem mit der Website. Können Sie mir bei den Funktionen helfen?'
     }
   ];
 
