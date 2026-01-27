@@ -226,7 +226,7 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
       progressFlow.nextStep(); // 'ocr'
       progressFlow.updateProgress(0, t('scanner.extractingData'));
 
-      const MAX_BYTES = 10 * 1024 * 1024; // 10MB
+      const MAX_BYTES = 10 * 1024 * 1024; // 10MB (Analyse-Limit, Upload erlaubt)
       const firstUrl = uploadedUrls[0];
 
       let sizeBytes = null;
