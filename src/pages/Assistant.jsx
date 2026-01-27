@@ -149,16 +149,24 @@ export default function Assistant() {
 
   const quickActions = [
     {
+      label: 'Dokument analysieren',
+      message: 'Analysiere das hochgeladene Dokument streng nach Arbeitsanweisung: 1) Sachverhalt (fest/streitig/unklar), 2) Anspruchsprüfung mit Tatbestandsmerkmalen und Subsumtion, 3) Beweis-/Verfahrenslage, 4) Machbarkeit, 5) Optionen (eskalierend/defensiv), 6) Empfehlung. Zitiere Rechtsnormen mit Fundstelle.'
+    },
+    {
+      label: 'Lücken & Widersprüche',
+      message: 'Prüfe die Fallakte auf fehlende Informationen oder Widersprüche. Liste gezielte Rückfragen gemäß „Umgang mit Unklarheiten“ auf und ordne deren rechtliche Relevanz ein.'
+    },
+    {
+      label: 'Widerspruch entwerfen',
+      message: 'Erstelle einen DIN-5008-konformen Widerspruch basierend auf den aktenbasierten Fakten: Betreff mit Aktenzeichen, Anrede, kurzer Sachverhalt, rechtliche Würdigung mit Normen & Subsumtion, konkreter Antrag mit Frist (Datum) und Rechtsfolgenhinweis, Grußformel. Keine Spekulationen.'
+    },
+    {
       label: 'Fallstatus',
       message: 'Wie ist der Status von Fall W24-XXXX? (Bitte Fall-Nummer einsetzen)'
     },
     {
       label: 'Frist prüfen',
       message: 'Was ist die Frist für Fall W24-XXXX? (Bitte Fall-Nummer einsetzen)'
-    },
-    {
-      label: 'Widerspruch erstellen',
-      message: 'Erstelle bitte einen Widerspruch für Fall W24-XXXX. (Bitte Fall-Nummer einsetzen)'
     },
     {
       label: 'Website-Hilfe',
@@ -194,7 +202,7 @@ export default function Assistant() {
             </div>
             <h1 className="text-4xl font-bold text-white mb-2">Paragraphen-Heini 📚⚖️</h1>
             <p className="text-xl text-white/80 max-w-2xl mx-auto">
-              Ihr sarkastisch-präziser Widerspruchs-Assistent mit anwaltlichem Scharfsinn und einer Vorliebe für Details!
+            Juristisch prüfender Assistent nach Ihrer Arbeitsanweisung: aktenbasiert, gutachterlich, fristklar – inkl. versandfertiger Entwürfe.
             </p>
           </div>
         </div>
