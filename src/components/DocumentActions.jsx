@@ -8,8 +8,7 @@ import { Download, Mail, Loader2, CheckCircle, FileText, FileType } from 'lucide
 import { useLocalization } from '@/components/hooks/useLocalization';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import GuestExpiredModal from './GuestExpiredModal';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+// Lazy import jsPDF + html2canvas at runtime to reduce initial bundle size
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { User } from '@/entities/User'; // Corrected import syntax
@@ -345,16 +344,25 @@ export default function DocumentActions({ caseData, generatedText, isGuest, gues
         setIsDownloadingPdf(false);
         return false; // Indicate failure
       }
-      
+
+      // Lazy-load heavy libs for faster initial load
+      const [{ jsPDF }, html2canvasMod] = await Promise.all([
+        import('jspdf'),
+        import('html2canvas')
+      ]);
+      const html2canvas = html2canvasMod.default || html2canvasMod;
+
+      const scale = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
       const canvas = await html2canvas(letterElement, {
-        scale: 2,
+        scale,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff'
       });
 
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      // Use JPEG for smaller PDFs, keep high quality
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4', compress: true });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -363,23 +371,32 @@ export default function DocumentActions({ caseData, generatedText, isGuest, gues
       const imgWidth = pdfWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
+      const fileName = `Schreiben_${caseData?.reference_number || caseData?.id?.slice(0,6) || 'Entwurf'}.pdf`;
+      pdf.setProperties({
+        title: fileName,
+        subject: 'Widerspruchsschreiben',
+        author: BRAND?.name || 'Widerspruch24',
+        keywords: 'Widerspruch, PDF',
+        creator: BRAND?.name || 'Widerspruch24'
+      });
+
       if (imgHeight <= pdfHeight) {
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
       } else {
         // Mehrseitiger Export: Bild nach unten versetzt wiederholt einsetzen
         let heightLeft = imgHeight;
         let position = 0;
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
         heightLeft -= pdfHeight;
         while (heightLeft > 0) {
           pdf.addPage();
           position = - (imgHeight - heightLeft);
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
           heightLeft -= pdfHeight;
         }
       }
 
-      pdf.save(`Schreiben_${caseData?.reference_number || caseData?.id?.slice(0,6) || 'Entwurf'}.pdf`);
+      pdf.save(fileName);
       try { trackEvent('export_success', { channel: 'pdf', caseId: caseData?.id, brand: 'widerspruch24' }); } catch {}
       return true; // Indicate success
 
@@ -470,6 +487,11 @@ ${senderName}`;
 
   return (
     <>
+      <div aria-live="polite" role="status" className="sr-only">
+        {isDownloadingPdf ? 'PDF wird erstellt…' : ''}
+        {emailSent ? 'E-Mail erfolgreich vorbereitet oder gesendet' : ''}
+        {error ? `Fehler: ${error}` : ''}
+      </div>
       <div className="glass rounded-3xl p-6">
         <div className="text-center mb-6">
           <h3 className="text-xl font-bold text-white mb-2 flex items-center justify-center gap-2">
@@ -508,6 +530,8 @@ ${senderName}`;
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* PDF Download */}
           <Button 
+            type="button"
+            aria-label="PDF herunterladen"
             onClick={handleDownloadPdf} 
             disabled={isDownloadingPdf || !isTermsAccepted || !canProceed} 
             className="glass text-white border-white/30 hover:glow transition-all duration-300 py-6 text-lg"
@@ -517,6 +541,8 @@ ${senderName}`;
 
           {/* TXT Download */}
           <Button 
+            type="button"
+            aria-label="TXT herunterladen"
             onClick={handleDownloadTxt} 
             disabled={!isTermsAccepted || !canProceed}
             variant="outline" 
@@ -527,6 +553,8 @@ ${senderName}`;
 
           {/* Email */}
           <Button 
+            type="button"
+            aria-label="E-Mail senden"
             onClick={() => setShowEmailForm(!showEmailForm)} 
             disabled={!isTermsAccepted || !canProceed}
             variant="outline" 

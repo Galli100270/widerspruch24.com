@@ -178,7 +178,7 @@ const EditableLetterPreview = ({
     const subject = t('letterSubject', { date: documentDate, reference: caseData.reference_number || '...' });
     const greeting = t('letterGreeting');
     const closing = t('letterClosing');
-    const signatureImg = caseData?.sender_data?.signature ? `<img src="${caseData.sender_data.signature}" alt="Unterschrift" style="height:2cm;margin-bottom:0.4cm;" />` : '';
+    const signatureImg = caseData?.sender_data?.signature ? `<img src="${caseData.sender_data.signature}" alt="Unterschrift" loading="lazy" style="height:2cm;margin-bottom:0.4cm;" />` : '';
     const senderLine = `${senderData.name || ''}, ${senderData.street || ''}, ${senderData.zip_code || ''} ${senderData.city || ''}`;
 
     const body = (() => {
@@ -335,6 +335,9 @@ const EditableLetterPreview = ({
       {/* A4-Container – kompletter Brief ist editierbar */}
       <div
         id="letter-content"
+        role="document"
+        aria-label="Briefvorschau"
+        lang={language || 'de'}
         className="bg-white text-black shadow-xl max-w-[21cm] mx-auto print:bg-white"
         style={{
           fontFamily: "'Times New Roman', 'Liberation Serif', serif", // Klassische Schrift für Briefe
@@ -503,10 +506,11 @@ const EditableLetterPreview = ({
               }}>
                 {caseData?.sender_data?.signature && (
                   <img
-                    src={caseData.sender_data.signature}
-                    alt="Unterschrift"
-                    style={{ height: '2cm', marginBottom: '0.4cm' }}
-                  />
+                      src={caseData.sender_data.signature}
+                      alt="Unterschrift"
+                      loading="lazy"
+                      style={{ height: '2cm', marginBottom: '0.4cm' }}
+                    />
                 )}
                 {senderData.name}
               </div>
