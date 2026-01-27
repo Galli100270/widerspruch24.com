@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(13);
       if (y > 275) { doc.addPage(); y = 20; }
-      doc.text(text, marginX, y);
+      doc.text(normalizeText(text), marginX, y);
       y += 6;
     };
 
