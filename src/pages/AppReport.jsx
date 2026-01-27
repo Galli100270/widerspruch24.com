@@ -40,7 +40,7 @@ export default function AppReport() {
 
           <Button onClick={handleDownload} disabled={downloading} className="glass text-white border-white/30 hover:glow">
             <Download className="w-4 h-4 mr-2" />
-            {downloading ? 'Wird erstellt…' : 'PDF herunterladen'}
+            {downloading ? 'Wird erstellt...' : 'PDF herunterladen'}
           </Button>
         </div>
       </div>
