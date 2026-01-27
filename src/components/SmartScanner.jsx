@@ -4,7 +4,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Camera, Upload, Loader2, AlertTriangle, X, PlusCircle, Check, FileUp, Info, FileText, Zap } from 'lucide-react';
 import { UploadFile, InvokeLLM } from '@/integrations/Core';
 import { splitAndExtractPdf } from '@/functions/splitAndExtractPdf';
-import { splitAndExtractPdf } from '@/functions/splitAndExtractPdf';
 import { safeExtractData } from '@/components/lib/ocr';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useProgressFlow } from './hooks/useProgressFlow';
@@ -251,9 +250,8 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
         console.warn(`Could not get remote file size for ${firstUrl}, proceeding with OCR guard:`, e);
       }
 
-      // Wenn Datei zu groß ODER (großes Office/PDF-Dokument und Größe unbekannt): KEINE OCR-Integration aufrufen
-      // Hintergrund: Einige CDNs liefern keine Content-Length -> 413 bei der Integration vermeiden.
-      if (tooLarge) {
+      // Wenn Datei zu groß: KEINE OCR für Nicht-PDF; große PDFs laufen über Backend (Split+Extract)
+      if (tooLarge && !isPdf) {
         // Überspringe weitere Schritte und liefere sinnvolle Platzhalter
         progressFlow.completeStep(); // OCR done (bypassed)
 
@@ -805,7 +803,6 @@ Antwort nur als JSON.`;
             type="file"
             accept="image/*"
             capture="environment"
-            multiple
             multiple
             onChange={(e) => handleFiles(e.target.files, 'camera')}
             className="hidden"
