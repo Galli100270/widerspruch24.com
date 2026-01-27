@@ -190,6 +190,7 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
           const { file_url } = await callWithRetry(() => UploadFile({ file: currentFile }), 2, 700);
           if (file_url) uploadedUrls.push(file_url);
         } catch (e) {
+          lastUploadError = e;
           console.warn('Upload fehlgeschlagen, überspringe Datei:', capturedFiles[i]?.name || '(unbekannt)', e);
         }
 
