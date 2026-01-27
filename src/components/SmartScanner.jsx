@@ -251,7 +251,7 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
 
       // Wenn Datei zu groß ODER (großes Office/PDF-Dokument und Größe unbekannt): KEINE OCR-Integration aufrufen
       // Hintergrund: Einige CDNs liefern keine Content-Length -> 413 bei der Integration vermeiden.
-      if (tooLarge || (isHeavyDoc && !sizeKnown)) {
+      if (tooLarge) {
         // Überspringe weitere Schritte und liefere sinnvolle Platzhalter
         progressFlow.completeStep(); // OCR done (bypassed)
 
@@ -465,7 +465,7 @@ Antwort nur als JSON.`;
           }));
         }
 
-        const fileType = fileToProcess.type.toLowerCase();
+        const fileType = (fileToProcess.type || '').toLowerCase();
         const isTextBased = ['text/plain', 'message/rfc822', 'application/vnd.ms-outlook'].includes(fileType);
         const isSupportedImage = ['image/jpeg', 'image/png', 'image/webp', 'image/tiff'].includes(fileType);
         const isHEIC = heicConverter.isHEIC(fileToProcess); // NEU: HEIC-Erkennung
@@ -540,6 +540,15 @@ Antwort nur als JSON.`;
     setIsDragging(false);
     handleFiles(Array.from(e.dataTransfer.files), 'drop');
   };
+
+  const openCamera = useCallback(() => {
+    try { if (cameraInputRef.current) cameraInputRef.current.value = null; } catch {}
+    cameraInputRef.current?.click();
+  }, []);
+  const openFilePicker = useCallback(() => {
+    try { if (fileInputRef.current) fileInputRef.current.value = null; } catch {}
+    fileInputRef.current?.click();
+  }, []);
 
   if (capturedFiles.length > 0) {
     return (
@@ -646,7 +655,7 @@ Antwort nur als JSON.`;
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4">
               <Button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={openFilePicker}
                 variant="outline"
                 className="glass text-white border-white/30 hover:glow py-3 px-5 rounded-2xl cursor-pointer"
                 disabled={isHandlingFiles || progressFlow.isVisible}
@@ -753,7 +762,7 @@ Antwort nur als JSON.`;
           <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
             {/* Kamera: nur Kamera direkt öffnen */}
             <Button
-              onClick={() => cameraInputRef.current?.click()}
+              onClick={openCamera}
               className="glass text-white border-white/30 hover:glow transition-all duration-300 py-4 px-6 rounded-2xl flex items-center gap-2 flex-1"
               disabled={isHandlingFiles || progressFlow.isVisible}
             >
@@ -762,7 +771,7 @@ Antwort nur als JSON.`;
             </Button>
             {/* Datei: alle restlichen Dokumenttypen */}
             <Button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={openFilePicker}
               variant="outline"
               className="glass border-white/30 text-white hover:bg-white/10 py-4 px-6 rounded-2xl flex items-center gap-2 flex-1"
               disabled={isHandlingFiles || progressFlow.isVisible}
@@ -778,6 +787,7 @@ Antwort nur als JSON.`;
             type="file"
             accept="image/*"
             capture="environment"
+            multiple
             onChange={(e) => handleFiles(e.target.files, 'camera')}
             className="hidden"
             disabled={isHandlingFiles || progressFlow.isVisible}
