@@ -16,6 +16,20 @@ Deno.serve(async (req) => {
 
     const now = new Date().toLocaleString('de-DE');
 
+    // Normalize text to ASCII-friendly for jsPDF standard fonts
+    const normalizeText = (s) => (s || '')
+      .replace(/[\u2010-\u2015]/g, '-') // various dashes/hyphens
+      .replace(/\u2212/g, '-') // minus sign
+      .replace(/[\u2018\u2019\u201A\u201B]/g, "'") // single quotes
+      .replace(/[\u201C\u201D\u201E\u201F]/g, '"') // double quotes
+      .replace(/\u2026/g, '...') // ellipsis
+      .replace(/\u2022/g, '-') // bullet
+      .replace(/[\u00A0\u2007\u202F]/g, ' ') // non-breaking spaces
+      .replace(/[\u2705]/g, '-') // checkmark
+      .replace(/[\uFE0F]/g, '') // variation selector
+      .replace(/[\u{1F300}-\u{1FAFF}]/gu, '') // emojis and symbols
+    ;
+
     const addTitle = (text) => {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(18);
@@ -34,7 +48,7 @@ Deno.serve(async (req) => {
     const addParagraph = (text) => {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(11);
-      const lines = doc.splitTextToSize(text, lineWidth);
+      const lines = doc.splitTextToSize(normalizeText(text), lineWidth);
       for (const line of lines) {
         if (y > 285) { doc.addPage(); y = 20; }
         doc.text(line, marginX, y);
@@ -47,7 +61,7 @@ Deno.serve(async (req) => {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(11);
       for (const it of items) {
-        const lines = doc.splitTextToSize(`• ${it}`, lineWidth);
+        const lines = doc.splitTextToSize(normalizeText(`- ${it}`), lineWidth);
         for (const line of lines) {
           if (y > 285) { doc.addPage(); y = 20; }
           doc.text(line, marginX, y);
