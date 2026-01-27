@@ -4,6 +4,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Camera, Upload, Loader2, AlertTriangle, X, PlusCircle, Check, FileUp, Info, FileText, Zap } from 'lucide-react';
 import { UploadFile, InvokeLLM } from '@/integrations/Core';
 import { splitAndExtractPdf } from '@/functions/splitAndExtractPdf';
+import { splitAndExtractPdf } from '@/functions/splitAndExtractPdf';
 import { safeExtractData } from '@/components/lib/ocr';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useProgressFlow } from './hooks/useProgressFlow';
@@ -234,7 +235,7 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
       let tooLarge = false;
       let sizeKnown = false;
       const urlLower = (firstUrl || "").toLowerCase();
-      const isPdf = urlLower.endsWith(".pdf") || urlLower.includes("application/pdf");
+      const isPdf = /\.pdf(\?|#|$)/.test(urlLower) || urlLower.includes("application/pdf");
       const isDocx = urlLower.endsWith(".docx") || urlLower.includes("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
       const isOdt = urlLower.endsWith(".odt") || urlLower.includes("application/vnd.oasis.opendocument.text");
       const isHeavyDoc = isPdf || isDocx || isOdt;
@@ -804,6 +805,7 @@ Antwort nur als JSON.`;
             type="file"
             accept="image/*"
             capture="environment"
+            multiple
             multiple
             onChange={(e) => handleFiles(e.target.files, 'camera')}
             className="hidden"
