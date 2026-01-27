@@ -458,7 +458,7 @@ const EditableLetterPreview = ({
                 marginBottom: '2cm',
                 fontSize: '12pt'
               }}>
-                {cityOnly(senderData.city)}, den {currentDate}
+                {cityOnly(senderData.city)}, den {currentDate || ''}
               </div>
 
               {/* Betreffzeile */}
