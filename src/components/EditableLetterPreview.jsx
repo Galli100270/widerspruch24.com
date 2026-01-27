@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit3, Save } from 'lucide-react';
+import { Edit3, Save, Gavel } from 'lucide-react';
 import { format } from 'date-fns';
 import { de, enGB } from 'date-fns/locale';
 import RichTextEditor from '@/components/editors/RichTextEditor';
+import { base44 } from '@/api/base44Client';
 
 const EditableLetterPreview = ({
   caseData,
@@ -24,6 +25,8 @@ const EditableLetterPreview = ({
     zip_code: '',
     city: ''
   });
+
+  const [researchLoading, setResearchLoading] = useState(false);
 
   // Placeholder for full letter content
   const FULL_MARK = '<!-- FULL_LETTER -->';
@@ -118,6 +121,55 @@ const EditableLetterPreview = ({
   const cityOnly = (fullCity) => {
     if (!fullCity) return 'Musterstadt';
     return fullCity.replace(/^\d{5}\s+/, '');
+  };
+
+  const handleInsertResearch = async () => {
+    try {
+      setResearchLoading(true);
+      const facts = {
+        reason: caseData?.objection_reason || caseData?.custom_reason || caseData?.facts?.reason,
+        amount_total: caseData?.facts?.amount_total,
+        due_since_date: caseData?.facts?.due_since_date,
+        frist_tage: caseData?.facts?.frist_tage || 14,
+        reference: caseData?.reference_number,
+      };
+      const { data } = await base44.functions.invoke('legalResearch', { topic: 'Widerspruch', facts, language });
+      const r = data?.research || data || {};
+
+      const esc = (s) => String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+      const statutes = (r.statutes || []).map(s => (
+        `<li><strong>${esc(s.paragraph)} ${esc(s.law)}</strong> – ${esc(s.summary)} <a href="${esc(s.source_url)}" target="_blank" rel="noopener">Quelle</a></li>`
+      )).join('');
+
+      const cases = (r.case_law || []).map(c => (
+        `<li><strong>${esc(c.court)}</strong>, ${esc(c.date)}, Az. ${esc(c.docket_number)} – ${esc(c.holding)} <a href="${esc(c.source_url)}" target="_blank" rel="noopener">Quelle</a></li>`
+      )).join('');
+
+      const counters = (r.counterarguments || []).map(x => (
+        `<li><em>${esc(x.argument)}</em>: ${esc(x.refutation)}</li>`
+      )).join('');
+
+      const sources = (r.additional_sources || []).map(u => (
+        `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></li>`
+      )).join('');
+
+      const section = `
+        <hr />
+        <h3>Rechtsgrundlagen und Rechtsprechung (automatisch recherchiert)</h3>
+        <h4>Gesetzliche Grundlagen</h4>
+        <ul>${statutes}</ul>
+        <h4>Rechtsprechung</h4>
+        <ul>${cases}</ul>
+        ${counters ? `<h4>Typische Gegenargumente und Entkräftung</h4><ul>${counters}</ul>` : ''}
+        ${sources ? `<h4>Weitere Quellen</h4><ul>${sources}</ul>` : ''}
+      `;
+
+      setEditableText(prev => (prev || '') + section);
+      if (!isEditing) setIsEditing(true);
+    } finally {
+      setResearchLoading(false);
+    }
   };
 
   const buildFullLetterHTML = () => {

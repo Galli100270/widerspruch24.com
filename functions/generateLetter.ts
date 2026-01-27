@@ -89,8 +89,21 @@ ANWEISUNGEN FÜR DEN BRIEF:
 `;
 
     // Integration über die base44-Instanz aufrufen
+    // Automatische juristische Recherche (Best-Effort, keine harte Abhängigkeit)
+    let researchJson = "";
+    try {
+      const { data: lr } = await base44.functions.invoke('legalResearch', {
+        topic: 'Widerspruch',
+        facts: normFacts,
+        language: 'de'
+      });
+      researchJson = JSON.stringify(lr?.research || lr, null, 2);
+    } catch (_) {
+      researchJson = ""; // Fallback: ohne strukturierte Recherche weitermachen
+    }
+
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `${systemPrompt}\n\n${userPrompt}`,
+      prompt: `${systemPrompt}\n\n${userPrompt}\n\nRecherchierte Fundstellen (JSON):\n${researchJson}`,
       add_context_from_internet: true,
       response_json_schema: null,
     });
