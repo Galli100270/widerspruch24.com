@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Camera, Upload, Loader2, AlertTriangle, X, PlusCircle, Check, FileUp, Info, FileText, Zap } from 'lucide-react';
 import { UploadFile, InvokeLLM } from '@/integrations/Core';
+import { splitAndExtractPdf } from '@/functions/splitAndExtractPdf';
 import { safeExtractData } from '@/components/lib/ocr';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useProgressFlow } from './hooks/useProgressFlow';
@@ -222,7 +223,7 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
         return;
       }
 
-      // Phase 3: OCR & Analyse mit hartem Bypass bei >10MB
+      // Phase 3: OCR & Analyse – PDFs über Backend (Split+Extract), Bilder lokal via Integration
       progressFlow.nextStep(); // 'ocr'
       progressFlow.updateProgress(0, t('scanner.extractingData'));
 
@@ -289,7 +290,7 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
         return;
       }
 
-      // Nicht zu groß: regulärer Pfad mit OCR (jetzt über safeExtractData) und ggf. LLM-Fallback (ohne große Datei)
+      // Nicht zu groß: regulärer Pfad mit OCR – PDFs via Backend (Split+Extract), Bilder direkt; ggf. LLM-Fallback
       let baseExtraction = null;
       let useLLMFallback = false;
 
@@ -306,30 +307,46 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
               recipient_address: { type: "string" }
             }
         };
-        const urlsForExtraction = isPdf ? [firstUrl] : uploadedUrls.slice(0, Math.min(5, uploadedUrls.length));
-        const results = await Promise.all(urlsForExtraction.map(u => safeExtractData(u, schema)));
-        const merged = {};
-        for (const r of results) {
-          if (r?.status === "success" && r.output) {
-            const o = r.output;
-            for (const k of Object.keys(o)) {
-              const nv = o[k];
-              const v = merged[k];
-              if (v == null || (typeof nv === "string" && nv.trim().length > (typeof v === "string" ? v.trim().length : 0)) || (typeof nv === "number" && (v == null))) {
-                merged[k] = nv;
+
+        if (isPdf) {
+          try {
+            const res = await splitAndExtractPdf({ file_url: firstUrl, json_schema: schema, pages_per_chunk: 8 });
+            const data = res?.data;
+            if (data?.output && typeof data.output === 'object') {
+              baseExtraction = data.output;
+              console.log('PDF processed via backend', { page_count: data.page_count, chunks: data.chunks });
+            } else {
+              useLLMFallback = true;
+            }
+          } catch (e) {
+            console.warn('Backend split+extract failed, falling back to LLM:', e);
+            useLLMFallback = true;
+          }
+        } else {
+          const urlsForExtraction = uploadedUrls.slice(0, Math.min(5, uploadedUrls.length));
+          const results = await Promise.all(urlsForExtraction.map(u => safeExtractData(u, schema)));
+          const merged = {};
+          for (const r of results) {
+            if (r?.status === "success" && r.output) {
+              const o = r.output;
+              for (const k of Object.keys(o)) {
+                const nv = o[k];
+                const v = merged[k];
+                if (v == null || (typeof nv === "string" && nv.trim().length > (typeof v === "string" ? v.trim().length : 0)) || (typeof nv === "number" && (v == null))) {
+                  merged[k] = nv;
+                }
               }
             }
           }
-        }
-        if (Object.keys(merged).length > 0) {
-          baseExtraction = merged;
-          console.log("Extraction successful on", urlsForExtraction.length, "file(s).");
-        } else {
-          console.warn("Extraction bypassed or empty on all files. Falling back to LLM (without file_urls).");
-          useLLMFallback = true;
+          if (Object.keys(merged).length > 0) {
+            baseExtraction = merged;
+            console.log('Extraction successful on', urlsForExtraction.length, 'image file(s).');
+          } else {
+            useLLMFallback = true;
+          }
         }
       } catch (e) {
-        console.error("Error during extraction, falling back to LLM (without file_urls):", e);
+        console.error('Error during extraction, enabling LLM fallback:', e);
         useLLMFallback = true;
       }
 
