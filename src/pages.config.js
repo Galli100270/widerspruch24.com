@@ -17,6 +17,7 @@ import Privacy from './pages/Privacy';
 import Scanner from './pages/Scanner';
 import Schreiben from './pages/Schreiben';
 import Terms from './pages/Terms';
+import AppReport from './pages/AppReport';
 import __Layout from './Layout.jsx';
 
 
@@ -40,6 +41,7 @@ export const PAGES = {
     "Scanner": Scanner,
     "Schreiben": Schreiben,
     "Terms": Terms,
+    "AppReport": AppReport,
 }
 
 export const pagesConfig = {
