@@ -6,7 +6,7 @@ import { Edit3, Save, Gavel } from 'lucide-react';
 import { format } from 'date-fns';
 import { de, enGB } from 'date-fns/locale';
 import RichTextEditor from '@/components/editors/RichTextEditor';
-import { base44 } from '@/api/base44Client';
+import { legalResearch } from '@/functions/legalResearch';
 
 const EditableLetterPreview = ({
   caseData,
@@ -133,7 +133,7 @@ const EditableLetterPreview = ({
         frist_tage: caseData?.facts?.frist_tage || 14,
         reference: caseData?.reference_number,
       };
-      const { data } = await base44.functions.invoke('legalResearch', { topic: 'Widerspruch', facts, language });
+      const { data } = await legalResearch({ topic: 'Widerspruch', facts, language });
       const r = data?.research || data || {};
 
       const esc = (s) => String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -280,7 +280,10 @@ const EditableLetterPreview = ({
                 <Edit3 className="w-4 h-4 mr-2" /> Bearbeiten (Word-Modus)
               </Button>
             )}
-          </div>
+            <Button onClick={handleInsertResearch} disabled={researchLoading} className="glass text-white border-white/30 hover:glow" size="sm">
+              <Gavel className="w-4 h-4 mr-2" /> {researchLoading ? 'Recherche läuft…' : 'Rechtsrecherche einfügen'}
+            </Button>
+            </div>
         </div>
       )}
 
