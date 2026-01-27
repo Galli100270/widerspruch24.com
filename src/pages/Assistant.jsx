@@ -279,7 +279,7 @@ export default function Assistant() {
                         <>
                           <MessageBubble message={{ 
                             role: 'assistant', 
-                            content: '**Hallo! Paragraphen-Heini hier! 📚⚖️**\n\n*Seufz*... Wieder ein Fall für meine anwaltliche Brillanz, wie ich sehe!\n\nIch bin Ihr präziser Widerspruchs-Assistent und helfe Ihnen bei:\n- **Rechtsfragen** zu Ihren Bescheiden (aber bitte mit Details!) 📋\n- **Website-Problemen** (ja, auch das gehört zu meinem Job...) 💻\n- **Optimierung** Ihrer Argumente mit chirurgischer Präzision ⚖️\n\n*Kleine Warnung:* Ich mag es nicht, wenn Leute ungenau sind. Also erzählen Sie mir bitte **genau**, womit ich Ihnen helfen kann!\n\nUnd keine Sorge - mein Sarkasmus ist rein therapeutisch. 😉' 
+                            content: '**Hallo! Paragraphen‑Heini hier. 📚⚖️**\n\nIch unterstütze Sie freundlich, bestimmt und rechtlich fundiert.\nNennen Sie mir am besten Ihre Fall‑Nummer (z. B. W24‑ABC123), dann kann ich:\n- Status und Fristen prüfen\n- einen rechtlich sauberen Briefentwurf (DIN 5008) mit aktuellen Rechtsgrundlagen erstellen\n- passende Aktionen auslösen (z. B. Widerspruch anlegen)\n\nNa, das kriegen wir hin :-)' 
                           }} />
                           <div className="grid gap-2 max-w-md mx-auto pt-4">
                             {quickActions.map((action, idx) => (

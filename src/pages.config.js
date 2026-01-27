@@ -1,45 +1,45 @@
-import Home from './pages/Home';
-import Scanner from './pages/Scanner';
-import Preview from './pages/Preview';
-import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
-import ChoosePlan from './pages/ChoosePlan';
-import Impressum from './pages/Impressum';
-import Datenschutz from './pages/Datenschutz';
+import AdminStripeEvents from './pages/AdminStripeEvents';
 import Agb from './pages/Agb';
-import Imprint from './pages/Imprint';
-import Privacy from './pages/Privacy';
-import Terms from './pages/Terms';
-import CaseDetails from './pages/CaseDetails';
 import Assistant from './pages/Assistant';
 import BetaDetails from './pages/BetaDetails';
+import CaseDetails from './pages/CaseDetails';
+import ChoosePlan from './pages/ChoosePlan';
+import Dashboard from './pages/Dashboard';
+import Datenschutz from './pages/Datenschutz';
 import Feedback from './pages/Feedback';
 import Health from './pages/Health';
+import Home from './pages/Home';
+import Impressum from './pages/Impressum';
+import Imprint from './pages/Imprint';
+import Preview from './pages/Preview';
+import Privacy from './pages/Privacy';
+import Scanner from './pages/Scanner';
 import Schreiben from './pages/Schreiben';
-import AdminStripeEvents from './pages/AdminStripeEvents';
+import Terms from './pages/Terms';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "Home": Home,
-    "Scanner": Scanner,
-    "Preview": Preview,
-    "Dashboard": Dashboard,
     "Admin": Admin,
-    "ChoosePlan": ChoosePlan,
-    "Impressum": Impressum,
-    "Datenschutz": Datenschutz,
+    "AdminStripeEvents": AdminStripeEvents,
     "Agb": Agb,
-    "Imprint": Imprint,
-    "Privacy": Privacy,
-    "Terms": Terms,
-    "CaseDetails": CaseDetails,
     "Assistant": Assistant,
     "BetaDetails": BetaDetails,
+    "CaseDetails": CaseDetails,
+    "ChoosePlan": ChoosePlan,
+    "Dashboard": Dashboard,
+    "Datenschutz": Datenschutz,
     "Feedback": Feedback,
     "Health": Health,
+    "Home": Home,
+    "Impressum": Impressum,
+    "Imprint": Imprint,
+    "Preview": Preview,
+    "Privacy": Privacy,
+    "Scanner": Scanner,
     "Schreiben": Schreiben,
-    "AdminStripeEvents": AdminStripeEvents,
+    "Terms": Terms,
 }
 
 export const pagesConfig = {
