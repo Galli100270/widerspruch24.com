@@ -173,7 +173,8 @@ const EditableLetterPreview = ({
   };
 
   const buildFullLetterHTML = () => {
-    const currentDateFormatted = format(new Date(), 'd. MMMM yyyy', { locale: dateLocale });
+    const now = new Date();
+    const currentDateFormatted = isNaN(now.getTime()) ? '' : format(now, 'd. MMMM yyyy', { locale: dateLocale });
     const documentDate = formatSafeDate(caseData.document_date);
     const subject = t('letterSubject', { date: documentDate, reference: caseData.reference_number || '...' });
     const greeting = t('letterGreeting');
