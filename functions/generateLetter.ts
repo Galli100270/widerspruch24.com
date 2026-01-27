@@ -58,7 +58,7 @@ Vorgaben zur juristischen Tiefe:
 - Am Ende kurze Quellenliste mit „Stand: <Datum>“ und seriösen Links (z. B. gesetze-im-internet.de, dejure.org, EUR-Lex).`;
 
     const userPrompt = `
-Erstelle ein ausführliches, rechtlich fundiertes Schreiben basierend auf den folgenden Daten.
+Erstelle ein ausführliches, rechtlich fundiertes Schreiben basierend auf den folgenden Daten. Lege besonderen Schwerpunkt auf belastbare, präzise Rechtsgrundlagen; Ziel ist eine argumentativ „angriffsresistente“ Begründung.
 
 ABSENDER:
 ${parties?.sender?.name || ''}
