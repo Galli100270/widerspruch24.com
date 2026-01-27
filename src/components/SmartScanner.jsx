@@ -187,7 +187,7 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
         }
 
         try {
-          const { file_url } = await callWithRetry(() => UploadFile({ file: currentFile }), 2, 700);
+          const { file_url } = await callWithRetry(() => UploadFile({ file: currentFile }), 3, 1000);
           if (file_url) uploadedUrls.push(file_url);
         } catch (e) {
           lastUploadError = e;
@@ -470,6 +470,15 @@ Antwort nur als JSON.`;
         const isSupportedImage = ['image/jpeg', 'image/png', 'image/webp', 'image/tiff'].includes(fileType);
         const isHEIC = heicConverter.isHEIC(fileToProcess); // NEU: HEIC-Erkennung
         const isDocument = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text'].includes(fileType);
+
+        // Striktes Live-Limit für große PDFs/DOCs (verhindert Upload-Fehler in Prod)
+        const DOC_MAX = 10 * 1024 * 1024; // 10MB
+        if (isDocument && fileToProcess.size > DOC_MAX) {
+          throw new Error(
+            (t && t('scanner.fileTooLargeDoc')) ||
+            `Das Dokument ist zu groß (${(fileToProcess.size / (1024*1024)).toFixed(1)} MB > 10 MB). Bitte PDF teilen oder als Bilder (JPG/PNG) hochladen.`
+          );
+        }
 
         if (isTextBased && onTextContent) {
           const reader = new FileReader();
