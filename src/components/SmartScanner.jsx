@@ -200,7 +200,8 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
       try { trackEvent('upload_success', { type: mode === 'additional' ? 'additional' : 'initial', count: uploadedUrls.length }); } catch {}
 
       if (uploadedUrls.length === 0) {
-        throw new Error(t('scanner.allFilesFailed'));
+        const msg = lastUploadError?.message || t('scanner.allFilesFailed');
+        throw new Error(msg);
       }
 
       progressFlow.completeStep();
