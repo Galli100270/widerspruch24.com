@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 // import { HelmetProvider } from 'react-helmet-async'; // Deactivated for debugging
@@ -275,8 +274,12 @@ export default function Layout({ children, currentPageName }) {
                 <Alert className="border-amber-400 bg-amber-50 text-amber-900">
                   <AlertDescription>
                     Hinweis: Zahlungsfunktionen sind deaktiviert (Stripe/Preise/APP_URL prüfen).
-                    {cfgTs ? ` Stand: ${new Date(cfgTs).toLocaleString()}` : ""}
-                  </AlertDescription>
+                    {(() => {
+                      if (!cfgTs) return "";
+                      const d = new Date(cfgTs);
+                      return isNaN(d.getTime()) ? "" : ` Stand: ${d.toLocaleString()}`;
+                    })()}
+                    </AlertDescription>
                 </Alert>
               </div>
             </div>
