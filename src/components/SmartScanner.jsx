@@ -471,14 +471,8 @@ Antwort nur als JSON.`;
         const isHEIC = heicConverter.isHEIC(fileToProcess); // NEU: HEIC-Erkennung
         const isDocument = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text'].includes(fileType);
 
-        // Striktes Live-Limit für große PDFs/DOCs (verhindert Upload-Fehler in Prod)
-        const DOC_MAX = 10 * 1024 * 1024; // 10MB
-        if (isDocument && fileToProcess.size > DOC_MAX) {
-          throw new Error(
-            (t && t('scanner.fileTooLargeDoc')) ||
-            `Das Dokument ist zu groß (${(fileToProcess.size / (1024*1024)).toFixed(1)} MB > 10 MB). Bitte PDF teilen oder als Bilder (JPG/PNG) hochladen.`
-          );
-        }
+        // Hinweis: Große PDFs/DOCs dürfen hochgeladen werden; OCR/Analyse wird später für >10MB sicher übersprungen.
+        // (Vorab-Grenzen entfernen, nur globales maxFileSize bleibt aktiv)
 
         if (isTextBased && onTextContent) {
           const reader = new FileReader();
