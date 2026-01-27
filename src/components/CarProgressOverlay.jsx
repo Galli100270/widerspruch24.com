@@ -1,6 +1,6 @@
-
 import React from "react";
 import AnalysisVideo from "@/components/AnalysisVideo";
+import RotatingCaptions from "@/components/RotatingCaptions";
 import { Button } from "@/components/ui/button";
 
 export default function CarProgressOverlay({
@@ -75,7 +75,24 @@ export default function CarProgressOverlay({
         aria-label={title}
       >
         <div className="w-full max-w-2xl">
-          <AnalysisVideo message={title} subMessage={subtitle} step={currentStep} progress={percent} />
+          <AnalysisVideo step={currentStep} progress={percent} />
+
+          <div className="mt-4 text-center text-white">
+            <h3 className="text-xl sm:text-2xl font-semibold">{L("analysis.headline", "Juristische Analyse läuft.")}</h3>
+            <p className="text-white/80 text-sm sm:text-base mt-1">
+              {L("analysis.subline", "Unsere KI analysiert aktuell Rechtslage, Machbarkeit und Vorgehensoptionen.")}
+            </p>
+            <RotatingCaptions
+              className="mt-2"
+              items={[
+                L("analysis.label.1", "Rechtliche Würdigung"),
+                L("analysis.label.2", "Prüfung der Anspruchsgrundlagen"),
+                L("analysis.label.3", "Bewertung der Erfolgsaussichten"),
+                L("analysis.label.4", "Strategische Handlungsempfehlung"),
+              ]}
+              intervalMs={2500}
+            />
+          </div>
 
           <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
             {!isDone && !error && (
