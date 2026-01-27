@@ -11,7 +11,7 @@ import { getRemoteFileSize } from "@/components/lib/files";
 export async function safeExtractData(file_url, json_schema) {
   const MAX_BYTES = 10 * 1024 * 1024;
   const urlLower = (file_url || "").toLowerCase();
-  const isPdf = urlLower.endsWith(".pdf") || urlLower.includes("application/pdf");
+  const isPdf = urlLower.endsWith(".pdf") || urlLower.includes("application/pdf") || /\.(pdf)(\?|#|$)/.test(urlLower);
   const isDocx = urlLower.endsWith(".docx") || urlLower.includes("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
   const isOdt = urlLower.endsWith(".odt") || urlLower.includes("application/vnd.oasis.opendocument.text");
   const isHeavyDoc = isPdf || isDocx || isOdt;
