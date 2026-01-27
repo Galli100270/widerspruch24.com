@@ -80,10 +80,11 @@ ${JSON.stringify(normFacts, null, 2)}
 
 ANWEISUNGEN FÜR DEN BRIEF:
 - Verwende die Anrede: "${personalizedGreeting}"
-- Gliedere nach DIN 5008: Betreff, Anrede, Sachverhalt, Rechtliche Würdigung (mit präzisen Zitaten: z.B. § 280 Abs. 1 BGB; BGH, Urt. v. <Datum>, Az. ...), Antrag/Frist (konkretes Datum + Rechtsfolgenhinweis), Grußformel.
+- Gliedere nach DIN 5008: Betreff, Anrede, Sachverhalt, Rechtliche Würdigung (mehr Normen als Fließtext: für jeden Punkt konkrete Paragrafen incl. Absatz/Satz/Nummer, z. B. § 280 Abs. 1, § 286 Abs. 1 BGB; BGH, Urt. v. <Datum>, Az. ...), Antrag/Frist (konkretes Datum + Rechtsfolgenhinweis), Grußformel.
 - Setze die Frist auf ${normFacts.frist_tage} Kalendertage ab heutigem Datum und nenne das konkrete Datum.
+- Antizipiere und entkräfte 2–3 naheliegende Gegenargumente mit Gegenbelegen (Normen/Rechtsprechung).
 - Höflich-bestimmter, anwaltlicher Stil; keine Drohkulisse.
-- Am Ende: „Quellen (Auszug) – Stand: ${new Date().toLocaleDateString('de-DE')}“ mit kurzen Links/Referenzen.
+- Am Ende: „Quellen (Auszug) – Stand: ${new Date().toLocaleDateString('de-DE')}“ mit mind. 8–12 Fundstellen inkl. Kurz-Link.
 - Kein Markdown, reiner Text.
 `;
 
