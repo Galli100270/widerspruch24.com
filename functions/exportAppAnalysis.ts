@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     const addTitle = (text) => {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(18);
-      doc.text(text, marginX, y);
+      doc.text(normalizeText(text), marginX, y);
       y += 8;
     };
 
