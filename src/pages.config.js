@@ -1,6 +1,7 @@
 import Admin from './pages/Admin';
 import AdminStripeEvents from './pages/AdminStripeEvents';
 import Agb from './pages/Agb';
+import AppReport from './pages/AppReport';
 import Assistant from './pages/Assistant';
 import BetaDetails from './pages/BetaDetails';
 import CaseDetails from './pages/CaseDetails';
@@ -17,7 +18,6 @@ import Privacy from './pages/Privacy';
 import Scanner from './pages/Scanner';
 import Schreiben from './pages/Schreiben';
 import Terms from './pages/Terms';
-import AppReport from './pages/AppReport';
 import __Layout from './Layout.jsx';
 
 
@@ -25,6 +25,7 @@ export const PAGES = {
     "Admin": Admin,
     "AdminStripeEvents": AdminStripeEvents,
     "Agb": Agb,
+    "AppReport": AppReport,
     "Assistant": Assistant,
     "BetaDetails": BetaDetails,
     "CaseDetails": CaseDetails,
@@ -41,7 +42,6 @@ export const PAGES = {
     "Scanner": Scanner,
     "Schreiben": Schreiben,
     "Terms": Terms,
-    "AppReport": AppReport,
 }
 
 export const pagesConfig = {

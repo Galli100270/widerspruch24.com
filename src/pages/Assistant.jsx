@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLocalization } from '@/components/hooks/useLocalization';
 import MessageBubble from '@/components/MessageBubble';
 import { User } from '@/entities/User';
+import { UploadFile } from '@/integrations/Core';
 
 export default function Assistant() {
   const { t } = useLocalization();
@@ -20,6 +21,9 @@ export default function Assistant() {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
+  const [attachments, setAttachments] = useState([]);
+  const [attachmentUrls, setAttachmentUrls] = useState([]);
+  const attachInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   const loadUser = useCallback(async () => {
@@ -112,14 +116,34 @@ export default function Assistant() {
     try {
       await agentSDK.addMessage(currentConversation, {
         role: 'user',
-        content: newMessage.trim()
+        content: newMessage.trim(),
+        file_urls: attachmentUrls
       });
       
       setNewMessage('');
+      setAttachments([]);
+      setAttachmentUrls([]);
     } catch (error) {
       setError('Fehler beim Senden der Nachricht.');
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleAttachFiles = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    try {
+      const uploads = await Promise.all(files.map(async (file) => {
+        const { file_url } = await UploadFile({ file });
+        return { name: file.name, url: file_url };
+      }));
+      setAttachments(prev => [...prev, ...uploads.map(u => u.name)]);
+      setAttachmentUrls(prev => [...prev, ...uploads.map(u => u.url)]);
+    } catch (err) {
+      setError('Fehler beim Hochladen der Datei(en).');
+    } finally {
+      try { e.target.value = null; } catch {}
     }
   };
 
@@ -305,7 +329,24 @@ export default function Assistant() {
 
                     {/* Message Input */}
                     <div className="flex-shrink-0 border-t border-white/10 p-6">
-                      <form onSubmit={handleSendMessage} className="flex gap-3">
+                      <form onSubmit={handleSendMessage} className="flex gap-3 items-center">
+                        <Button
+                          type="button"
+                          onClick={() => attachInputRef.current?.click()}
+                          variant="outline"
+                          className="glass border-white/30 text-white hover:bg-white/10"
+                          disabled={isSending}
+                          title="Dateien anhängen"
+                        >
+                          📎
+                        </Button>
+                        <input
+                          ref={attachInputRef}
+                          type="file"
+                          multiple
+                          onChange={handleAttachFiles}
+                          className="hidden"
+                        />
                         <Input
                           value={newMessage}
                           onChange={(e) => setNewMessage(e.target.value)}
@@ -325,6 +366,15 @@ export default function Assistant() {
                           )}
                         </Button>
                       </form>
+                      {attachments.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {attachments.map((name, idx) => (
+                            <span key={idx} className="text-xs text-white/80 bg-white/10 px-2 py-1 rounded">
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </>
                 ) : (
