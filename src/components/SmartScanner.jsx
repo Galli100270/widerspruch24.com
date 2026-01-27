@@ -162,6 +162,7 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
       progressFlow.updateProgress(0, t('scanner.uploadingFiles'));
 
       const uploadedUrls = [];
+      let lastUploadError = null;
 
       // Sanitize nur Standard-Web-Images (nicht die bereits konvertierten HEIC-Dateien)
       const sanitizedFiles = await Promise.all(
