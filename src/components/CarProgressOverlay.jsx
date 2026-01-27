@@ -1,6 +1,6 @@
 
 import React from "react";
-import BookshelfLawyer from "@/components/animations/BookshelfLawyer";
+import AnalysisVideo from "@/components/AnalysisVideo";
 import { Button } from "@/components/ui/button";
 
 export default function CarProgressOverlay({
@@ -75,26 +75,7 @@ export default function CarProgressOverlay({
         aria-label={title}
       >
         <div className="w-full max-w-2xl">
-          <BookshelfLawyer message={title} subMessage={subtitle} step={currentStep} progress={percent} />
-
-          {!error && (
-            <div className="mt-6 glass rounded-2xl p-4 border border-white/20 shadow-2xl">
-              <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-indigo-400 transition-all duration-300"
-                  style={{ width: `${percent}%` }}
-                />
-              </div>
-              <div className="flex justify-between items-center text-white/90 text-sm mt-2">
-                <span>
-                  {currentStep === "drafting"
-                    ? L("progress.title.drafting", "Schreibe Entwurf …")
-                    : L("progress.title.working", "Wir arbeiten für dich…")}
-                </span>
-                <span className="font-mono">{percent}%</span>
-              </div>
-            </div>
-          )}
+          <AnalysisVideo message={title} subMessage={subtitle} step={currentStep} progress={percent} />
 
           <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
             {!isDone && !error && (
