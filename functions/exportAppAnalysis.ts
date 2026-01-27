@@ -150,7 +150,7 @@ Deno.serve(async (req) => {
     doc.setDrawColor(150);
     doc.line(marginX, 287, marginX + lineWidth, 287);
     doc.setFontSize(9);
-    doc.text('Widerspruch24 – Interner Analyse- & Launch-Report | Automatisch generiert', marginX, 293);
+    doc.text(normalizeText('Widerspruch24 – Interner Analyse- & Launch-Report | Automatisch generiert'), marginX, 293);
 
     const pdfBytes = doc.output('arraybuffer');
     return new Response(pdfBytes, {
