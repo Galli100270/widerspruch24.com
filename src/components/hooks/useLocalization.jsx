@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { getTranslation } from '@/components/lib/localization';
 import { User } from '@/entities/User';
@@ -118,19 +117,27 @@ export const useLocalization = () => {
     const toDate = (val) => {
       if (!val) return null;
       if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+      const tryParse = (s) => {
+        let d = new Date(s);
+        if (!isNaN(d.getTime())) return d;
+        d = new Date(String(s).replace(' ', 'T'));
+        if (!isNaN(d.getTime())) return d;
+        if (String(s).includes('T') && !String(s).endsWith('Z')) {
+          d = new Date(String(s) + 'Z');
+          if (!isNaN(d.getTime())) return d;
+        }
+        return null;
+      };
       if (typeof val === 'string' || typeof val === 'number') {
-        const d = new Date(val);
-        return isNaN(d.getTime()) ? null : d;
+        return tryParse(val);
       }
       if (typeof val === 'object') {
-        // Common shapes: {year, month, day} or {date: "..."}
         if ('year' in val && 'month' in val) {
           const d = new Date(val.year, Math.max(0, (val.month || 1) - 1), val.day || 1);
           return isNaN(d.getTime()) ? null : d;
         }
         if ('date' in val) {
-          const d = new Date(val.date);
-          return isNaN(d.getTime()) ? null : d;
+          return tryParse(val.date);
         }
       }
       return null;
@@ -184,4 +191,3 @@ export const useLocalization = () => {
     user
   };
 };
-

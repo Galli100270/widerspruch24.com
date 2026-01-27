@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { User } from '@/entities/User';
 
@@ -42,11 +41,24 @@ export const useTrialStatus = () => {
 
       // Sichere Datums-Berechnung
       let trialStart;
+      const parseDateString = (s) => {
+        if (!s || typeof s !== 'string') return null;
+        let d = new Date(s);
+        if (!isNaN(d.getTime())) return d;
+        // try normalize 'YYYY-MM-DD HH:mm:ss' -> 'YYYY-MM-DDTHH:mm:ss'
+        d = new Date(s.replace(' ', 'T'));
+        if (!isNaN(d.getTime())) return d;
+        // try append 'Z' if looks like ISO without zone
+        if (s.includes('T') && !s.endsWith('Z')) {
+          d = new Date(s + 'Z');
+          if (!isNaN(d.getTime())) return d;
+        }
+        return null;
+      };
+
       if (typeof trialStarted === 'string') {
-        // The condition `trialStarted.includes('T')` is often used to distinguish between
-        // 'YYYY-MM-DD' (local interpretation) and ISO 'YYYY-MM-DDTHH:mm:ss.sssZ' (UTC interpretation).
-        // For robustness, new Date(string) generally handles both, but keeping the requested logic.
-        trialStart = trialStarted.includes('T') ? new Date(trialStarted) : new Date(trialStarted);
+        const d = parseDateString(trialStarted);
+        trialStart = d || new Date(); // fallback to now to avoid invalid time value downstream
       } else {
         trialStart = new Date(trialStarted);
       }

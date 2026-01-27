@@ -63,7 +63,7 @@ export default class ErrorBoundary extends React.Component {
             </Button>
           </div>
           <div className="mt-4 text-xs text-white/50 break-all">
-            {this.state.error?.message || ""}
+            {/* Hide raw technical errors from end users; still logged in console */}
           </div>
         </div>
       </div>
