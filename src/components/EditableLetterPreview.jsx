@@ -114,8 +114,9 @@ const EditableLetterPreview = ({
     if (!dateString) return '...';
     try {
       const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '...';
       return format(date, 'dd.MM.yyyy');
-    } catch { return dateString; }
+    } catch { return '...'; }
   };
 
   const cityOnly = (fullCity) => {
