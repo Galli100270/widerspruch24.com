@@ -48,7 +48,14 @@ Deno.serve(async (req) => {
       ? `Sehr geehrte${recipientLastName.toLowerCase().includes('frau') || Math.random() > 0.5 ? ' Frau' : 'r Herr'} ${recipientLastName},`
       : "Sehr geehrte Damen und Herren,";
 
-    const systemPrompt = `Du bist ein erfahrener juristischer Sachbearbeiter (deutsches Recht). Verfasse professionelle, rechtlich fundierte Schreiben nach DIN 5008 (Variante A, klare Absätze, sachlich-höflicher Ton). Du gibst KEINE individuelle Rechtsberatung, arbeitest aber mit belastbaren Normzitaten und aktueller Rechtsprechung (Gericht, Datum, Aktenzeichen). Füge am Ende eine kurze Quellenliste mit „Stand: <Datum>“ an.`;
+    const systemPrompt = `Du bist ein erfahrener juristischer Sachbearbeiter (deutsches Recht). Verfasse professionelle, rechtlich fundierte Schreiben nach DIN 5008 (Variante A, klare Absätze, sachlich-höflicher Ton). Du gibst KEINE individuelle Rechtsberatung.
+
+Vorgaben zur juristischen Tiefe:
+- Arbeite mit präzisen Normketten (z. B. § 280 Abs. 1, § 286 Abs. 1 BGB i.V.m. § 241 Abs. 2 BGB) und nutze Abs., S., Nr., lit. wo einschlägig.
+- Zitiere aktuelle Rechtsprechung (Gericht, Datum, Az.), ggf. auch EU-Recht/Verordnungen sowie Landesrecht/Verwaltungsvorschriften.
+- Antizipiere typische Gegenargumente der Gegenseite und entkräfte sie kurz, sachlich.
+- Mindestumfang an Belegen: 8–12 belastbare Nachweise (Gemisch aus Gesetzen, Urteilen, ggf. Kommentierung/amtlichen Hinweisen).
+- Am Ende kurze Quellenliste mit „Stand: <Datum>“ und seriösen Links (z. B. gesetze-im-internet.de, dejure.org, EUR-Lex).`;
 
     const userPrompt = `
 Erstelle ein ausführliches, rechtlich fundiertes Schreiben basierend auf den folgenden Daten.
