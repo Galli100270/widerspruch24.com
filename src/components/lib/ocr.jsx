@@ -30,12 +30,14 @@ export async function safeExtractData(file_url, json_schema) {
   if (tooLarge) {
     return { status: "bypassed", output: null, reason: "too_large" };
   }
-  if (isHeavyDoc && !sizeKnown) {
-    // Unbekannte Größe bei schweren Formaten → nicht riskieren (413 vermeiden)
-    return { status: "bypassed", output: null, reason: "unknown_size_heavy_doc" };
-  }
+  // Bei unbekannter Größe trotzdem versuchen zu extrahieren; Fehler wird unten abgefangen
+  // (früher: bypass bei unknown_size_heavy_doc)
 
-  // Sicher: Integration ausführen
-  const res = await ExtractDataFromUploadedFile({ file_url, json_schema });
-  return res;
+  // Versuch: Integration ausführen (bei Fehlern weich abbrechen)
+  try {
+    const res = await ExtractDataFromUploadedFile({ file_url, json_schema });
+    return res;
+  } catch (e) {
+    return { status: "bypassed", output: null, reason: "extract_failed", details: String(e?.message || e) };
+  }
 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -292,7 +291,7 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
       let useLLMFallback = false;
 
       try {
-        const extractionResult = await safeExtractData(firstUrl, {
+        const schema = {
             type: "object",
             properties: {
               sender_name: { type: "string" },
@@ -303,12 +302,27 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
               recipient_name: { type: "string" },
               recipient_address: { type: "string" }
             }
-        });
-        if (extractionResult.status === "success" && extractionResult.output) {
-          baseExtraction = extractionResult.output;
-          console.log("Initial extraction successful.");
+        };
+        const urlsForExtraction = isPdf ? [firstUrl] : uploadedUrls.slice(0, Math.min(5, uploadedUrls.length));
+        const results = await Promise.all(urlsForExtraction.map(u => safeExtractData(u, schema)));
+        const merged = {};
+        for (const r of results) {
+          if (r?.status === "success" && r.output) {
+            const o = r.output;
+            for (const k of Object.keys(o)) {
+              const nv = o[k];
+              const v = merged[k];
+              if (v == null || (typeof nv === "string" && nv.trim().length > (typeof v === "string" ? v.trim().length : 0)) || (typeof nv === "number" && (v == null))) {
+                merged[k] = nv;
+              }
+            }
+          }
+        }
+        if (Object.keys(merged).length > 0) {
+          baseExtraction = merged;
+          console.log("Extraction successful on", urlsForExtraction.length, "file(s).");
         } else {
-          console.warn("Extraction bypassed or not successful. Falling back to LLM (without file_urls).");
+          console.warn("Extraction bypassed or empty on all files. Falling back to LLM (without file_urls).");
           useLLMFallback = true;
         }
       } catch (e) {
