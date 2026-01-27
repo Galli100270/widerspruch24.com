@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -348,29 +347,38 @@ export default function DocumentActions({ caseData, generatedText, isGuest, gues
       }
       
       const canvas = await html2canvas(letterElement, {
-        scale: 2, // Quality scale
+        scale: 2,
         useCORS: true,
         logging: false,
+        backgroundColor: '#ffffff'
       });
-      
+
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'pt', // Use points to match canvas units
-        format: 'a4'
-      });
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const ratio = canvasHeight / canvasWidth;
 
-      const width = pdfWidth;
-      const height = width * ratio;
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
-      
+      // Bildbreite an Seitenbreite anpassen
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      if (imgHeight <= pdfHeight) {
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      } else {
+        // Mehrseitiger Export: Bild nach unten versetzt wiederholt einsetzen
+        let heightLeft = imgHeight;
+        let position = 0;
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+        while (heightLeft > 0) {
+          pdf.addPage();
+          position = - (imgHeight - heightLeft);
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pdfHeight;
+        }
+      }
+
       pdf.save(`Schreiben_${caseData?.reference_number || caseData?.id?.slice(0,6) || 'Entwurf'}.pdf`);
       try { trackEvent('export_success', { channel: 'pdf', caseId: caseData?.id, brand: 'widerspruch24' }); } catch {}
       return true; // Indicate success

@@ -1,4 +1,3 @@
-
 import React, { useMemo } from "react";
 import ReactQuill from "react-quill";
 
@@ -20,7 +19,9 @@ export default function RichTextEditor({ value, onChange, className = "", toolba
   const formats = [
     "font", "size",
     "bold", "italic", "underline",
-    "color", "align"
+    "color", "background", "align",
+    "list", "indent",
+    "link", "image"
   ];
 
   return (

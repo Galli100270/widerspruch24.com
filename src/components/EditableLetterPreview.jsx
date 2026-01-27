@@ -237,17 +237,16 @@ const EditableLetterPreview = ({
         <div id="letter-toolbar" className="ql-toolbar ql-snow no-print glass rounded-xl p-2 border-white/30">
           <span className="ql-formats">
             <select className="ql-font">
-              <option value="Times New Roman" selected>Times New Roman</option> {/* Default for letters */}
-              <option value="serif">Serif</option>
+              <option value="serif" selected>Serif (Times)</option>
               <option value="sans-serif">Sans</option>
               <option value="monospace">Mono</option>
-              <option value="Dancing Script">Schreibschrift</option> {/* Custom font support */}
+              <option value="Dancing">Schreibschrift</option>
             </select>
             <select className="ql-size">
-              <option value="10pt">Klein</option>
-              <option value="12pt" selected>Normal</option>
-              <option value="14pt">Groß</option>
-              <option value="18pt">Sehr Groß</option>
+              <option value="small">Klein</option>
+              <option value="" selected>Normal</option>
+              <option value="large">Groß</option>
+              <option value="huge">Sehr Groß</option>
             </select>
           </span>
           <span className="ql-formats">
@@ -281,7 +280,7 @@ const EditableLetterPreview = ({
       {/* A4-Container – kompletter Brief ist editierbar */}
       <div
         id="letter-content"
-        className="bg-white text-black shadow-xl max-w-[21cm] mx-auto"
+        className="bg-white text-black shadow-xl max-w-[21cm] mx-auto print:bg-white"
         style={{
           fontFamily: "'Times New Roman', 'Liberation Serif', serif", // Klassische Schrift für Briefe
           fontSize: '12pt',

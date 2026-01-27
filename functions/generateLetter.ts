@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.7.1';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
   try {
@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       ? `Sehr geehrte${recipientLastName.toLowerCase().includes('frau') || Math.random() > 0.5 ? ' Frau' : 'r Herr'} ${recipientLastName},`
       : "Sehr geehrte Damen und Herren,";
 
-    const systemPrompt = `Du bist ein erfahrener juristischer Sachbearbeiter mit umfassender Kenntnis des deutschen Rechts. Deine Aufgabe ist es, professionelle, rechtlich fundierte Schreiben zu verfassen. Du gibst KEINE individuelle Rechtsberatung, aber verweist auf einschlägige Rechtsnormen und Gesetze. Dein Stil ist sachlich, aber bestimmt und ausführlich. Strukturiere den Brief nach deutschen Geschäftsbrief-Standards (DIN 5008). Antworte ausschließlich auf Deutsch.`;
+    const systemPrompt = `Du bist ein erfahrener juristischer Sachbearbeiter (deutsches Recht). Verfasse professionelle, rechtlich fundierte Schreiben nach DIN 5008 (Variante A, klare Absätze, sachlich-höflicher Ton). Du gibst KEINE individuelle Rechtsberatung, arbeitest aber mit belastbaren Normzitaten und aktueller Rechtsprechung (Gericht, Datum, Aktenzeichen). Füge am Ende eine kurze Quellenliste mit „Stand: <Datum>“ an.`;
 
     const userPrompt = `
 Erstelle ein ausführliches, rechtlich fundiertes Schreiben basierend auf den folgenden Daten.
@@ -73,15 +73,17 @@ ${JSON.stringify(normFacts, null, 2)}
 
 ANWEISUNGEN FÜR DEN BRIEF:
 - Verwende die Anrede: "${personalizedGreeting}"
-- Nenne relevante Gesetze und Paragraphen (z.B. § 280 BGB).
-- Setze konkrete Fristen (frist_tage).
-- Formuliere klare Forderungen/Ankündigungen.
+- Gliedere nach DIN 5008: Betreff, Anrede, Sachverhalt, Rechtliche Würdigung (mit präzisen Zitaten: z.B. § 280 Abs. 1 BGB; BGH, Urt. v. <Datum>, Az. ...), Antrag/Frist (konkretes Datum + Rechtsfolgenhinweis), Grußformel.
+- Setze die Frist auf ${normFacts.frist_tage} Kalendertage ab heutigem Datum und nenne das konkrete Datum.
+- Höflich-bestimmter, anwaltlicher Stil; keine Drohkulisse.
+- Am Ende: „Quellen (Auszug) – Stand: ${new Date().toLocaleDateString('de-DE')}“ mit kurzen Links/Referenzen.
 - Kein Markdown, reiner Text.
 `;
 
     // Integration über die base44-Instanz aufrufen
     const result = await base44.integrations.Core.InvokeLLM({
       prompt: `${systemPrompt}\n\n${userPrompt}`,
+      add_context_from_internet: true,
       response_json_schema: null,
     });
 
