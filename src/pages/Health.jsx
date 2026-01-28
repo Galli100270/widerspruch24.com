@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, AlertTriangle, Activity, Upload, Shield, Server, Globe, Smartphone, Cpu, Loader2, Rocket } from "lucide-react";
 import { createPageUrl } from "@/utils";
+import { useLocalization } from "@/components/hooks/useLocalization";
+import { getErrorBuffer } from "@/components/lib/monitoring";
 
 const StatusIcon = ({ ok }) => ok
   ? <CheckCircle2 className="w-5 h-5 text-green-500" />
@@ -15,6 +17,10 @@ export default function Health() {
   const [results, setResults] = useState({});
   const [extended, setExtended] = useState(false);
   const [error, setError] = useState("");
+  const [smoke, setSmoke] = useState(null);
+  const [clientDateOk, setClientDateOk] = useState(null);
+  const [errorClusters, setErrorClusters] = useState([]);
+  const { formatDate } = useLocalization();
 
   const setRes = (k, v) => setResults(prev => ({ ...prev, [k]: v }));
 
@@ -101,9 +107,46 @@ export default function Health() {
     }
   };
 
+  const runSmoke = async () => {
+    try {
+      setSmoke({ running: true });
+      const res = await base44.functions.invoke('selftest', {});
+      const payload = (res && typeof res === 'object' && 'data' in res) ? res.data : res;
+      setSmoke({ running: false, data: payload });
+    } catch (e) {
+      setSmoke({ running: false, error: e?.message || 'Smoke failed' });
+    }
+  };
+
   useEffect(() => {
     // Run light checks by default for a quick status on page open
     runChecks({ extended: false });
+
+    // Build error clusters from client buffer
+    try {
+      const buf = getErrorBuffer();
+      const map = new Map();
+      buf.forEach(e => {
+        const key = e?.message ? String(e.message).slice(0, 200) : 'unknown';
+        map.set(key, (map.get(key) || 0) + 1);
+      });
+      setErrorClusters(Array.from(map.entries()).map(([message, count]) => ({ message, count })).sort((a,b)=>b.count-a.count).slice(0, 10));
+    } catch {}
+
+    // Client-side date parser smoke test (regression for "Invalid time value")
+    try {
+      const samples = [
+        '2024-12-31', '2024-12-31T10:15:00', '2024-12-31 10:15:00',
+        { year: 2024, month: 12, day: 31 }, { date: '2024-12-31' }
+      ];
+      const okAll = samples.every(s => {
+        const out = formatDate(s, 'short');
+        return typeof out === 'string' && out.length > 0 && !/invalid/i.test(out);
+      });
+      setClientDateOk(okAll);
+    } catch {
+      setClientDateOk(false);
+    }
   }, []);
 
   const allGood = useMemo(() => {
@@ -195,6 +238,32 @@ export default function Health() {
                 </Button>
               </div>
             )}
+          </CardRow>
+
+          <CardRow icon={Activity} title="Smoke Tests (Backend)" ok={smoke?.data ? smoke.data.fail === 0 : true}>
+            <div className="flex items-center gap-2">
+              <Button onClick={runSmoke} size="sm" className="glass text-white border-white/30 hover:glow" disabled={smoke?.running}>
+                {smoke?.running ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Start
+              </Button>
+              {smoke?.data && (
+                <div className="text-xs">OK: {smoke.data.ok}  b FAIL: {smoke.data.fail}  b Dauer: {smoke.data.duration_ms}ms</div>
+              )}
+              {smoke?.error && <div className="text-xs text-yellow-300">{smoke.error}</div>}
+            </div>
+          </CardRow>
+
+          <CardRow icon={AlertTriangle} title="Client-Fehler (letzte Session)" ok={true}>
+            <div className="space-y-1">
+              <div className="text-xs">Date Parser: {clientDateOk === null ? '' : (clientDateOk ? 'OK' : 'Fehler')}</div>
+              {errorClusters?.length ? (
+                <ul className="text-xs list-disc ml-4">
+                  {errorClusters.slice(0,5).map((e,i) => (
+                    <li key={i}>{e.message}  d7{e.count}</li>
+                  ))}
+                </ul>
+              ) : <div className="text-xs">Keine Fehler aufgezeichnet.</div>}
+            </div>
           </CardRow>
 
           {extended && (

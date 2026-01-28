@@ -1,5 +1,4 @@
-
-import { createClientFromRequest } from 'npm:@base44/sdk@0.7.1';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 function ok(detail) { return { status: 'ok', detail }; }
 function fail(detail) { return { status: 'fail', detail }; }
@@ -65,6 +64,16 @@ Deno.serve(async (req) => {
       results.config_status = ok(payload || {});
     } catch (e) {
       results.config_status = fail(e.message || 'invoke configStatus failed');
+    }
+
+    // Small upload probe
+    try {
+      const blob = new Blob(["demo"], { type: "text/plain" });
+      const file = new File([blob], "probe.txt", { type: "text/plain" });
+      const up = await base44.integrations.Core.UploadFile({ file });
+      results.upload = ok({ ok: !!up?.file_url });
+    } catch (e) {
+      results.upload = fail(e.message || 'upload failed');
     }
 
     // LLM smoke (no external context)

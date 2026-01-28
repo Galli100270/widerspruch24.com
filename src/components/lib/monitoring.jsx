@@ -3,11 +3,20 @@ const formTelemetryKey = "w24_form_telemetry";
 
 function pushError(evt) {
   const current = getErrorBuffer();
+  const nav = (typeof navigator !== 'undefined') ? navigator : {};
+  const conn = nav.connection || {};
   current.push({
     ts: new Date().toISOString(),
     message: String(evt?.message || evt?.reason || evt),
     stack: evt?.error?.stack || evt?.reason?.stack || null,
     type: evt?.type || "error",
+    ua: nav.userAgent || null,
+    online: typeof nav.onLine === 'boolean' ? nav.onLine : null,
+    url: (typeof location !== 'undefined' && location.href) ? location.href : null,
+    connection: {
+      effectiveType: conn.effectiveType || null,
+      downlink: typeof conn.downlink === 'number' ? conn.downlink : null,
+    }
   });
   try {
     sessionStorage.setItem(errorBufferKey, JSON.stringify(current.slice(-200)));
