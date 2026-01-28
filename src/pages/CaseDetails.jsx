@@ -19,6 +19,8 @@ import RecipientFinder from "@/components/RecipientFinder";
 import DeadlineCalculator from "@/components/DeadlineCalculator";
 import { base44 } from "@/api/base44Client";
 import CarProgressOverlay from "@/components/CarProgressOverlay";
+import { splitAndExtractPdf } from "@/functions/splitAndExtractPdf";
+import { safeExtractData } from "@/components/lib/ocr";
 const SmartScannerLazy = React.lazy(() => import("../components/SmartScanner"));
 const AdditionalDocumentsLazy = React.lazy(() => import("../components/AdditionalDocuments"));
 import DocumentActions from "@/components/DocumentActions";
