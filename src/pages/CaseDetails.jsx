@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import CaseLettersDialog from "@/components/CaseLettersDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { callWithRetry } from "@/components/lib/network";
+import { getRemoteFileSize } from "@/components/lib/files";
 import RecipientFinder from "@/components/RecipientFinder";
 import DeadlineCalculator from "@/components/DeadlineCalculator";
 import { base44 } from "@/api/base44Client";
@@ -264,13 +265,18 @@ Antworte ausschließlich als JSON mit {"suggestion": "Frage?"}.`;
       const isTextLikely =
         (file.type && file.type.toLowerCase().startsWith('text/')) ||
         /\.(txt|md|csv|eml|msg)$/i.test(file.name);
+      const isPdfType = (file.type && file.type.toLowerCase().includes('application/pdf')) || /\.pdf$/i.test(file.name);
+
+      let sizeBytes = null;
+      try { sizeBytes = await getRemoteFileSize(file_url); } catch {}
+      const tooLarge = typeof sizeBytes === 'number' && sizeBytes > (10 * 1024 * 1024);
 
       let analysisSummary = '';
 
       if (isTextLikely) {
-        // Analyse reinen Texts ohne file_urls (vermeidet Decode-Fehler)
+        // Reinen Text lokal lesen (keine file_urls nötig)
         const textContent = await (await fetch(file_url)).text();
-        const snippet = textContent.slice(0, 8000); // Limit snippet size for prompt
+        const snippet = textContent.slice(0, 8000);
         const prompt = `Das folgende TEXT-Dokument wurde als zusätzlicher Beleg hochgeladen. Analysiere den Inhalt und fasse die relevantesten Informationen, die den Widerspruch unterstützen, in einem kurzen Absatz zusammen.
 Bisheriger Hauptgrund: "${objectionDetails.main_objection_reason || '—'}".
 Antworte ausschließlich auf Deutsch, nur mit dem zusammengefassten Text, ohne Einleitung oder Disclaimer.
@@ -278,8 +284,27 @@ Antworte ausschließlich auf Deutsch, nur mit dem zusammengefassten Text, ohne E
 TEXT:
 """${snippet}"""`;
         analysisSummary = await InvokeLLM({ prompt });
+      } else if (tooLarge) {
+        // Sicherer Guard: keine LLM-Dateianalyse bei >10MB
+        analysisSummary = 'Das Dokument überschreitet das 10MB-Limit für die automatische Analyse. Bitte laden Sie relevante Seiten als Fotos (JPG/PNG) oder eine kleinere PDF hoch.';
+      } else if (isPdfType) {
+        // PDF: zuerst Backend-Extraktion versuchen (ohne file_urls), dann mit LLM zusammenfassen
+        try {
+          const schema = { type: 'object', properties: { sender_name: { type: 'string' }, reference_number: { type: 'string' }, amount: { type: 'number' }, document_date: { type: 'string' } } };
+          const res = await splitAndExtractPdf({ file_url, json_schema: schema, pages_per_chunk: 8 });
+          const merged = res?.data?.output;
+          if (merged && typeof merged === 'object') {
+            const prompt = `Fasse die wichtigsten Punkte dieses PDF-Belegs in 3–5 Sätzen auf Deutsch zusammen. Nutze diese extrahierten Felder als Kontext (falls vorhanden): ${JSON.stringify(merged).slice(0, 3500)}. Antworte nur mit dem Text.`;
+            const out = await InvokeLLM({ prompt });
+            analysisSummary = typeof out === 'string' ? out : (out?.text || '');
+          }
+        } catch (_e) {
+          // Fallback: kleine PDFs direkt an LLM schicken
+          const prompt = `Das folgende Dokument wurde als zusätzlicher Beleg hochgeladen. Bitte analysiere es und fasse die relevantesten Informationen, die den Widerspruch unterstützen, in einem kurzen Absatz zusammen. Der bisherige Hauptgrund des Widerspruchs lautet: "${objectionDetails.main_objection_reason || '—'}". Antworte ausschließlich auf Deutsch und nur mit dem zusammengefassten Text.`;
+          analysisSummary = await InvokeLLM({ prompt, file_urls: [file_url] });
+        }
       } else {
-        // Standardpfad für PDF/Bild/DOC: Datei als Kontext anhängen
+        // Bilder/andere kleine Dateien: direkte LLM-Analyse mit Datei
         const prompt = `Das folgende Dokument wurde als zusätzlicher Beleg hochgeladen. Bitte analysiere es und fasse die relevantesten Informationen, die den Widerspruch unterstützen, in einem kurzen Absatz zusammen. Der bisherige Hauptgrund des Widerspruchs lautet: "${objectionDetails.main_objection_reason || '—'}". Antworte ausschließlich auf Deutsch und nur mit dem zusammengefassten Text.`;
         analysisSummary = await InvokeLLM({ prompt, file_urls: [file_url] });
       }
@@ -295,9 +320,8 @@ TEXT:
         ]
       }));
     } catch (err) {
-      console.error("Upload/Analyse fehlgeschlagen:", err);
-      setError("Upload oder Analyse fehlgeschlagen. Bitte erneut versuchen.");
-      // Dokument dennoch sichtbar machen (ohne URL), damit der Nutzer es ggf. erneut lädt.
+      console.error('Upload/Analyse fehlgeschlagen:', err);
+      setError('Upload oder Analyse fehlgeschlagen. Bitte erneut versuchen.');
       const f = e.target.files?.[0];
       if (f) {
         setObjectionDetails(prev => ({
@@ -310,7 +334,6 @@ TEXT:
       }
     } finally {
       setIsUploading(false);
-      // Reset input to allow same file re-upload
       if (e.target) e.target.value = '';
     }
   };
