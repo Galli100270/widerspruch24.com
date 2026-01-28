@@ -255,7 +255,7 @@ export default function Health() {
 
           <CardRow icon={AlertTriangle} title="Client-Fehler (letzte Session)" ok={true}>
             <div className="space-y-1">
-              <div className="text-xs">Date Parser: {clientDateOk === null ? '–' : (clientDateOk ? 'OK' : 'Fehler')}</div> '–' : (clientDateOk ? 'OK' : 'Fehler')}</div>' : (clientDateOk ? 'OK' : 'Fehler')}</div>
+              <div className="text-xs">Date Parser: {clientDateOk === null ? '–' : (clientDateOk ? 'OK' : 'Fehler')}</div>' : (clientDateOk ? 'OK' : 'Fehler')}</div>
               {errorClusters?.length ? (
                 <ul className="text-xs list-disc ml-4">
                   {errorClusters.slice(0,5).map((e,i) => (
