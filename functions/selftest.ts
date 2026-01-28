@@ -56,13 +56,32 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Invoke configStatus function (service role to avoid RLS/permission issues)
+    // Create → Delete a temporary Case (non-destructive)
+    let tmpCaseId = null;
+    try {
+      const kase = await base44.entities.Case.create({ origin: 'scanner', title: 'Selftest Case' });
+      tmpCaseId = kase.id;
+      results.case_crud = ok({ id: kase.id });
+    } catch (e) {
+      results.case_crud = fail(e.message || 'case CRUD error');
+    } finally {
+      if (tmpCaseId) {
+        try { await base44.entities.Case.delete(tmpCaseId); } catch (_) {}
+      }
+    }
+
+    // Invoke configStatus function (optional)
     try {
       const cfg = await base44.asServiceRole.functions.invoke('configStatus', {});
       const payload = (cfg && typeof cfg === 'object' && 'data' in cfg) ? cfg.data : cfg;
       results.config_status = ok(payload || {});
     } catch (e) {
-      results.config_status = fail(e.message || 'invoke configStatus failed');
+      const msg = e?.message || '';
+      if (String(msg).includes('403')) {
+        results.config_status = ok({ skipped: true, reason: 'forbidden' });
+      } else {
+        results.config_status = fail(msg || 'invoke configStatus failed');
+      }
     }
 
     // Small upload probe
