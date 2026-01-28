@@ -247,7 +247,7 @@ export default function Health() {
                 Start
               </Button>
               {smoke?.data && (
-                <div className="text-xs">OK: {smoke.data.ok}  b FAIL: {smoke.data.fail}  b Dauer: {smoke.data.duration_ms}ms</div>
+                <div className="text-xs">OK: {smoke.data.ok} • FAIL: {smoke.data.fail} • Dauer: {smoke.data.duration_ms}ms</div>
               )}
               {smoke?.error && <div className="text-xs text-yellow-300">{smoke.error}</div>}
             </div>
