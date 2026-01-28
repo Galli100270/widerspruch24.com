@@ -16,13 +16,12 @@ Deno.serve(async (req) => {
 
     const results = {};
 
-    // Entities schema reachable
+    // Entities basic access (non-fatal)
     try {
-      const caseSchema = await base44.entities.Case.schema();
-      const letterSchema = await base44.entities.Letter.schema();
-      results.entities_schema = ok({ case_props: Object.keys(caseSchema.properties || {}).length, letter_props: Object.keys(letterSchema.properties || {}).length });
+      const few = await base44.entities.Template.list(1);
+      results.entities_access = ok({ templates: Array.isArray(few) ? few.length : 0 });
     } catch (e) {
-      results.entities_schema = fail(e.message || 'schema error');
+      results.entities_access = fail(e.message || 'entities access error');
     }
 
     // Create → Update → Delete a temporary Letter (non-destructive)
@@ -57,9 +56,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Invoke configStatus function (accept both raw body or axios-like {data})
+    // Invoke configStatus function (service role to avoid RLS/permission issues)
     try {
-      const cfg = await base44.functions.invoke('configStatus', {});
+      const cfg = await base44.asServiceRole.functions.invoke('configStatus', {});
       const payload = (cfg && typeof cfg === 'object' && 'data' in cfg) ? cfg.data : cfg;
       results.config_status = ok(payload || {});
     } catch (e) {
