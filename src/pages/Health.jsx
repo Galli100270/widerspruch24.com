@@ -259,7 +259,7 @@ export default function Health() {
               {errorClusters?.length ? (
                 <ul className="text-xs list-disc ml-4">
                   {errorClusters.slice(0,5).map((e,i) => (
-                    <li key={i}>{e.message}  d7{e.count}</li>
+                    <li key={i}>{e.message} ×{e.count}</li>
                   ))}
                 </ul>
               ) : <div className="text-xs">Keine Fehler aufgezeichnet.</div>}
