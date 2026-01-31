@@ -1,3 +1,17 @@
+/*
+Musterfall (Beispiel-Aufruf):
+await base44.functions.invoke('generateLetter', {
+  letterData: {
+    parties: {
+      sender: { name: 'Max Mustermann', strasse: 'Musterweg 1', plz: '10115', ort: 'Berlin', email: 'max@example.com' },
+      recipient: { name: 'Telekom Deutschland GmbH', strasse: 'Landgrabenweg 151', plz: '53227', ort: 'Bonn' }
+    },
+    facts: { reason: 'Falsche Rechnung', referenz: 'KD-12345', frist_tage: 14, amount_total: 89.90 },
+    shortcodesRaw: 'Seit 3 Monaten falscher Betrag trotz Kündigungsbestätigung.'
+  }
+});
+Erwartet: { generatedText: '...DIN-5008 konformer Fließtext...' }
+*/
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {

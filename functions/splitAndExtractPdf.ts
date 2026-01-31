@@ -1,15 +1,23 @@
+/*
+Musterfall (Beispiel-Aufruf):
+- Zweck: Große PDFs in handliche Teile splitten und strukturierte Daten extrahieren
+- Aufruf (Frontend SDK): await base44.functions.invoke('splitAndExtractPdf', { file_url: '<PDF_URL>', json_schema: { invoice_number: {type:'string'} }, pages_per_chunk: 6 })
+- Erwartete Antwort: { status: 'success', page_count: <n>, chunks: <m>, output: { ...extrahierte Felder } }
+Hinweise:
+- Gastmodus wird unterstützt (kein Login erforderlich)
+- Wenn json_schema leer ist, wird ein leeres Objekt übergeben (Extraktion dann ggf. generisch)
+*/
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { PDFDocument } from 'npm:pdf-lib@1.17.1';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Auth optional: Gastnutzer erlaubt
+    await base44.auth.me().catch(() => null);
 
-    const body = await req.json();
+    let body = {};
+    try { body = await req.json(); } catch (_) { body = {}; }
     const fileUrl = body?.file_url;
     const jsonSchema = body?.json_schema || body?.schema || {};
     let pagesPerChunk = Number(body?.pages_per_chunk) || 8;
