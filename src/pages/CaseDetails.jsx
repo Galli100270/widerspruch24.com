@@ -391,24 +391,27 @@ TEXT:
           caseData?.amount ? `Betrag: ${caseData.amount} €` : null
         ].filter(Boolean).join(" | ");
         const prompt = `
-        Rolle & Stil: Anwaltlich belastbares Widerspruchsschreiben, nüchtern und präzise, ohne Umgangssprache. Ziel: argumentative Lücken schließen, gerichtsfest.
+        Rolle & Perspektive: Ich-Form des Absenders (selbst handelnd). Keine Hinweise auf Anwälte/Kanzlei/Vertretung, keine Plattform-/KI-/Tool-Bezüge.
+        Ziel: gerichtsfestes, lückenlos begründetes Widerspruchsschreiben in nüchternem, präzisem Stil.
         Kontext: ${header || "—"}
-        Meine Begründung (aufgreifen, sprachlich straffen): """${userReason}"""
+        Meine Begründung (aufgreifen, straffen): """${userReason}"""
         Weitere Details/Belege: """${detail}"""
         Gewünschtes Ergebnis: """${requested}"""
 
         Struktur (reiner Fließtext, keine Markdown-Syntax):
         1) Sachverhalt (kurz, geordnet, mit Aktenzeichen/Datum).
-        2) Rechtliche Würdigung mit präzisen Normzitaten (z.B. § 280 Abs. 1 BGB; § 241 Abs. 2 BGB; § 249 BGB; § 254 BGB; § 823, § 831 BGB – je nach Fall) und, falls relevant, technische Normen (DIN/Regelwerke) mit rechtlicher Einordnung.
-        3) Anspruchsprüfung: Tatbestandsmerkmale – Subsumtion – Ergebnis (warum Anspruch besteht/ scheitert).
+        2) Rechtliche Würdigung mit präzisen Normzitaten (z.B. § 280 Abs. 1, § 241 Abs. 2, § 249, § 254, § 823, § 831 BGB – nur soweit einschlägig) und ggf. technische Normen (DIN/Regelwerke) mit rechtlicher Einordnung.
+        3) Anspruchsprüfung: Tatbestandsmerkmale → Subsumtion → Ergebnis (warum Anspruch besteht oder scheitert).
         4) Antizipierte Gegenargumente (Mitverschulden, Pflichtenkreise, Kausalität etc.) und Entkräftung mit Quellen.
         5) Ergebnis/Rechtsfolge und konkreter Antrag mit Frist (14 Tage ab heute, Datum nennen; Rechtsfolgenhinweis).
-        6) Kurze Quellenliste „Stand: ${new Date().toLocaleDateString('de-DE')}“ mit belastbaren Fundstellen (Gesetze/Urteile) inkl. Kurz-Links.
+        6) Quellenliste „Stand: ${new Date().toLocaleDateString('de-DE')}“ mit belastbaren Fundstellen (Gesetze/Urteile) inkl. Kurz-Links.
+
+        Verbote:
+        - Keine Formulierungen wie „in anwaltlicher Vertretung“, „als Ihr Rechtsanwalt“, „unsere Kanzlei“, „wir vertreten“ etc.
+        - Keine Plattform-/KI-/Tool-Hinweise.
 
         Anforderungen:
-        - Keine weichen Formulierungen, keine „Bitte“-Töne.
-        - Subsumtion statt Behauptung.
-        - Aktualität der Rechtslage berücksichtigen.
+        - Subsumtion statt Behauptung; Aktualität der Rechtslage beachten.
         - Länge: 380–700 Wörter.
         Ausgabe: nur der Fließtext (Deutsch).`;
         setGenProgress(65);

@@ -46,25 +46,28 @@ Deno.serve(async (req) => {
     const recipientLastName = getLastName(parties?.recipient?.name);
     const personalizedGreeting = recipientLastName
       ? `Sehr geehrte/r ${recipientLastName},`
-      : "Sehr geehrte Damen und Herren,";
+      : "Sehr geehrte Damen und Herren,"; // bewusst neutral; kein Kanzlei-/Vertretungsbezug
 
-    const systemPrompt = `Du bist ein spezialisiertes Verfasser-Assistenzsystem für deutsche Rechtsanwält:innen.
-Ziel: anwaltlich belastbare, vor Gericht vertretbare Schriftsätze ohne argumentative Lücken.
-Stil: nüchtern, präzise, keine Umgangssprache, keine Bitten, kein Konjunktiv der Unsicherheit.
-Form: DIN 5008, klare Überschriften und Absätze, keine Markdown-Formatierung.
+    const systemPrompt = `Du verfasst juristisch belastbare Schriftsätze im deutschen Recht.
+Ziel: gerichtsfeste, lückenlose Argumentation.
+Perspektive: IMMER Ich-Perspektive des Absenders (eigenständig handelnde Person), niemals als Anwalt/Kanzlei/Vertreter.
+Verbotene Formulierungen: „in anwaltlicher Vertretung“, „als Ihr Rechtsanwalt“, „unsere Kanzlei“, „wir vertreten“ u.ä.
+Keine Hinweise auf Plattformen, KI, Tools oder interne Workflows.
+Stil: nüchtern, präzise, professionell; keine Umgangssprache, keine weichen Formulierungen.
+Form: DIN 5008, klare Überschriften/Absätze, keine Markdown-Syntax.
 
 Juristische Anforderungen (zwingend):
-- Strikte Trennung der Teile: 1) Sachverhalt, 2) Rechtliche Würdigung, 3) Anspruchsprüfung (Tatbestandsmerkmale + Subsumtion + Ergebnis), 4) Ergebnis/Rechtsfolge, 5) Antizipierte Gegenargumente (mit Entkräftung), 6) Antrag/Frist, 7) Quellen.
-- Paragraphengestützte Argumentation mit präzisen Fundstellen (z.B. § 280 Abs. 1 BGB; § 254 BGB; § 823 Abs. 1 BGB; § 831 BGB; ggf. § 249 BGB; § 241 Abs. 2 BGB). Keine pauschalen Normnennungen.
-- Subsumtion: Tatbestandsmerkmale nennen und konkret auf den Einzelfall anwenden; erläutere, warum ein Anspruch besteht oder scheitert.
-- Technische Normen (DIN/anerkanntes Regelwerk) berücksichtigen, wenn relevant; rechtliche Einordnung (z.B. Verkehrssicherungspflicht) vornehmen.
-- Aktualität: auf aktuelle Gesetzeslage und Rechtsprechung abstellen; Beispiele mit Gericht, Datum, Aktenzeichen (sofern öffentlich zugänglich). Veraltete Standardfloskeln sind unzulässig.
-- Keine Aussagen ohne Beleg. Bei Unsicherheit: eng formulieren („nach überwiegender Auffassung“, „herrschende Meinung“), aber stets mit Quelle.
-- Quellenliste am Schluss: mind. 8–12 belastbare Fundstellen (Gesetze, Urteile, ggf. amtliche Hinweise/Kommentierungen) mit Kurz-URL (gesetze-im-internet.de, dejure.org, EUR-Lex etc.).`;
+- Struktur: 1) Sachverhalt, 2) Rechtliche Würdigung, 3) Anspruchsprüfung (Tatbestandsmerkmale → Subsumtion → Ergebnis), 4) Ergebnis/Rechtsfolge, 5) Antizipierte Gegenargumente (mit Entkräftung), 6) Antrag/Frist, 7) Quellen.
+- Paragraphengestützt mit präzisen Fundstellen (z.B. § 280 Abs. 1, § 254, § 249, § 241 Abs. 2, § 823, § 831 BGB je nach Fall). Keine pauschalen Normnennungen ohne Subsumtion.
+- Technische Normen (DIN/Regelwerke) rechtlich einordnen (z.B. Verkehrssicherungspflichten), sofern relevant.
+- Aktuelle Rechtslage/Rechtsprechung (Gericht, Datum, Az.) berücksichtigen.
+- Keine unbelegten Aussagen; bei Unsicherheit enge Formulierungen mit Quelle.
+- Abschluss: Quellenliste (8–12 belastbare Fundstellen; z.B. gesetze-im-internet.de, dejure.org, EUR-Lex) mit Datum „Stand: <heute>“. `;
 
     const userPrompt = `
-Erstelle ein anwaltlich belastbares Widerspruchsschreiben auf Basis der Daten (siehe unten).
-Nutze zwingend die Struktur: Betreff, Anrede, 1) Sachverhalt, 2) Rechtliche Würdigung, 3) Anspruchsprüfung (Tatbestandsmerkmale – Subsumtion – Ergebnis), 4) Ergebnis/Rechtsfolge, 5) Antizipierte Gegenargumente (mit Entkräftung), 6) Antrag/Frist, 7) Quellen, Grußformel.
+Erstelle ein belastbares Widerspruchsschreiben auf Basis der Daten.
+Perspektive: Ich-Form des Absenders (selbst handelnde Person). Kein Kanzlei-/Anwalts-/Vertretungsbezug und keinerlei Hinweise auf Plattformen/KI/Tools.
+Struktur: Betreff, Anrede, 1) Sachverhalt, 2) Rechtliche Würdigung, 3) Anspruchsprüfung (Tatbestandsmerkmale – Subsumtion – Ergebnis), 4) Ergebnis/Rechtsfolge, 5) Antizipierte Gegenargumente (mit Entkräftung), 6) Antrag/Frist, 7) Quellen, Grußformel + Name.
 
 ABSENDER:
 ${parties?.sender?.name || ''}
@@ -85,14 +88,14 @@ STRUKTURIERTE FAKTEN:
 ${JSON.stringify(normFacts, null, 2)}
 
 WEITERE ANWEISUNGEN:
-- Anrede verwenden: "${personalizedGreeting}"
-- Anspruchsprüfung mit klaren Tatbestandsmerkmalen und konkreter Subsumtion (z.B. aus §§ 280 Abs. 1, 241 Abs. 2 BGB; 823, 831 BGB; 249 BGB; 254 BGB – je nach Fall). Keine pauschalen Normnennungen.
-- Wenn einschlägig: technische Normen (DIN/Regelwerke) benennen und rechtlich einordnen (z.B. Verkehrssicherungspflichten).
-- Frist: ${normFacts.frist_tage} Tage ab heute; nenne das konkrete Datum und die Rechtsfolgen bei fruchtlosem Ablauf.
-- Antizipiere typische Einwände (z.B. Mitverschulden, fehlende Pflichtverletzung, fehlende Kausalität) und entkräfte sie mit Normen/Rechtsprechung.
-- Nüchterner, präziser Kanzlei-Stil; keine Emotionalität, keine weichen Formulierungen.
-- Schluss: „Quellen (Auszug) – Stand: ${new Date().toLocaleDateString('de-DE')}“ mit mind. 8–12 belastbaren Fundstellen (Gesetze/Urteile/amtliche Hinweise) und Kurz-Links.
-- Ausgabe als reiner Fließtext ohne Markdown.`;
+- Anrede: "${personalizedGreeting}"
+- Anspruchsprüfung mit klaren Tatbestandsmerkmalen und konkreter Subsumtion (z.B. §§ 280 Abs. 1, 241 Abs. 2, 249, 254, 823, 831 BGB – nur bei Relevanz).
+- Relevante DIN-/technische Normen rechtlich einordnen (z.B. Verkehrssicherungspflichten), sofern einschlägig.
+- Frist: ${normFacts.frist_tage} Tage ab heute inkl. Datum und Rechtsfolgenhinweis.
+- Typische Gegeneinwände (Mitverschulden, Pflichtenkreise, Kausalität) antizipieren und widerlegen mit Normen/Rechtsprechung.
+- Stil: nüchtern, präzise, ohne Umgangssprache; keine verbotenen Formulierungen (Anwalt/Kanzlei/Vertretung/„wir vertreten“ etc.).
+- Schluss: „Quellen (Auszug) – Stand: ${new Date().toLocaleDateString('de-DE')}“ (8–12 Fundstellen) und Grußformel „Mit freundlichen Grüßen“ + eigener Name.
+- Ausgabe: reiner Fließtext, keine Markdown-Syntax.`;
 
     // Integration über die base44-Instanz aufrufen
     // Automatische juristische Recherche (Best-Effort, keine harte Abhängigkeit)
