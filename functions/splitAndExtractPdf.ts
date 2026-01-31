@@ -19,16 +19,23 @@ Deno.serve(async (req) => {
     let body = {};
     try { body = await req.json(); } catch (_) { body = {}; }
     const fileUrl = body?.file_url;
+    const fileUri = body?.file_uri;
     const jsonSchema = body?.json_schema || body?.schema || {};
     let pagesPerChunk = Number(body?.pages_per_chunk) || 8;
     if (pagesPerChunk < 1) pagesPerChunk = 1;
 
-    if (!fileUrl || typeof fileUrl !== 'string') {
-      return Response.json({ error: 'file_url is required' }, { status: 400 });
+    let effectiveFileUrl = typeof fileUrl === 'string' ? fileUrl : '';
+    if (!effectiveFileUrl && typeof fileUri === 'string' && fileUri) {
+      const su = await base44.asServiceRole.integrations.Core.CreateFileSignedUrl({ file_uri: fileUri, expires_in: 600 });
+      effectiveFileUrl = su?.signed_url || '';
+    }
+
+    if (!effectiveFileUrl) {
+      return Response.json({ error: 'file_url or file_uri is required' }, { status: 400 });
     }
 
     // Fetch original PDF
-    const res = await fetch(fileUrl);
+    const res = await fetch(effectiveFileUrl);
     if (!res.ok) {
       return Response.json({ error: `Failed to fetch source PDF (${res.status})` }, { status: 400 });
     }
