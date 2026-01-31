@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -27,7 +26,7 @@ const generateCaseNumber = () => {
 export default function Scanner({ t, language }) {
   // Move all hooks to the top of the component to follow the Rules of Hooks
   const navigate = useNavigate();
-  const { guestSession, isGuest } = useGuestSession(language);
+  const { guestSession, isGuest, isLoading: guestLoading } = useGuestSession(language);
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     sender_name: "",
