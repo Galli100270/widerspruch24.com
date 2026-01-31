@@ -78,9 +78,9 @@ const LetterPreview = ({ caseData, generatedText, t, language = 'de', showPartia
         {senderCity || 'Ort'}, den {currentDate}
       </div>
 
-      {/* Subject */}
+      {/* Betreff fett – DIN 5008 */}
       <div className="mb-8">
-        <div className="font-bold text-lg">{subject}</div>
+        <div className="font-bold text-lg">{subjectText}</div>
       </div>
 
       {/* Content */}
