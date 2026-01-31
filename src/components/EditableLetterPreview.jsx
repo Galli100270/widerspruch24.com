@@ -478,7 +478,7 @@ const EditableLetterPreview = ({
                 marginBottom: '1.5cm',
                 fontSize: '12pt'
               }}>
-                {t('letterGreeting')}
+                {greetingText}
               </div>
 
               {/* Brieftext */}
