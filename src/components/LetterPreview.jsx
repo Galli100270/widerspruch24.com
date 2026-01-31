@@ -73,9 +73,9 @@ const LetterPreview = ({ caseData, generatedText, t, language = 'de', showPartia
         ))}
       </div>
       
-      {/* Date */}
+      {/* Datum rechts – DIN 5008 */}
       <div className="text-right mb-8">
-        Musterstadt, den {currentDate}
+        {senderCity || 'Ort'}, den {currentDate}
       </div>
 
       {/* Subject */}
