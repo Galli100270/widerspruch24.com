@@ -177,9 +177,13 @@ const EditableLetterPreview = ({
     const now = new Date();
     const currentDateFormatted = isNaN(now.getTime()) ? '' : format(now, 'd. MMMM yyyy', { locale: dateLocale });
     const documentDate = formatSafeDate(caseData.document_date);
-    const subject = t('letterSubject', { date: documentDate, reference: caseData.reference_number || '...' });
-    const greeting = t('letterGreeting');
-    const closing = t('letterClosing');
+    const ref = caseData.reference_number || '';
+    const _subject = t ? t('letterSubject', { date: documentDate, reference: ref }) : '';
+    const subjectText = _subject && _subject !== 'letterSubject' ? _subject : `Widerspruch gegen Bescheid vom ${documentDate}${ref ? ` – AZ: ${ref}` : ''}`;
+    const _greet = t ? t('letterGreeting') : '';
+    const greetingText = _greet && _greet !== 'letterGreeting' ? _greet : 'Sehr geehrte Damen und Herren,';
+    const _close = t ? t('letterClosing') : '';
+    const closingText = _close && _close !== 'letterClosing' ? _close : 'Mit freundlichen Grüßen';
     const signatureImg = caseData?.sender_data?.signature ? `<img src="${caseData.sender_data.signature}" alt="Unterschrift" loading="lazy" style="height:2cm;margin-bottom:0.4cm;" />` : '';
     const senderLine = `${senderData.name || ''}, ${senderData.street || ''}, ${senderData.zip_code || ''} ${senderData.city || ''}`;
 
