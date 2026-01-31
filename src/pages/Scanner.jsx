@@ -184,6 +184,17 @@ export default function Scanner({ t, language }) {
     "other"
   ];
 
+  if (guestLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-16">
+        <div className="glass rounded-3xl p-8 text-white text-center space-y-3">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
+          <div>{t('preview.validating')}</div>
+        </div>
+      </div>
+    );
+  }
+
   if (step === 1) {
     return (
       <div className="min-h-screen px-4 py-16">
