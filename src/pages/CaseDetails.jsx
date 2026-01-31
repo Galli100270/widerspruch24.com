@@ -486,6 +486,24 @@ TEXT:
     setIsSuggestionActive(false); // Always deactivate suggestion on focus
   };
 
+  if (guestLoading || !caseId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-16">
+        <div className="glass rounded-3xl p-8 text-white text-center space-y-3">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
+          <div>{guestLoading ? 'Gast-Sitzung wird initialisiert…' : 'Kein Fall gefunden.'}</div>
+          {!guestLoading && (
+            <div className="pt-2">
+              <Button variant="outline" className="glass border-white/30 text-white hover:bg-white/10" onClick={() => navigate(createPageUrl('Scanner'))}>
+                Zurück zum Scanner
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (!caseData) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 py-16">
