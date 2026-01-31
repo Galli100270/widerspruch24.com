@@ -609,7 +609,7 @@ export default function SchreibenPage({ t, language }) {
                 {creatingOnPreview ? (
                   <>
                     <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3" />
-                    <div className="text-lg font-semibold">Speichere und generiere Vorschau</div>
+                    <div className="text-lg font-semibold">Speichere und generiere Vorschau…</div>
                     <div className="text-white/70 text-sm mt-1">Bei hoher Auslastung kann es kurz zu Wartezeiten kommen.</div>
                   </>
                 ) : (
@@ -618,7 +618,7 @@ export default function SchreibenPage({ t, language }) {
                     {createError && <div className="text-red-300 text-sm mb-4">{createError}</div>}
                     <div className="flex justify-center gap-3">
                       <Button onClick={retryCreate} className="glass text-white border-white/30 hover:glow">Erneut versuchen</Button>
-                      <Button onClick={handleBack} variant="outline" className="glass border-white/30 text-white hover:bg-white/10">Zur FCck</Button>
+                      <Button onClick={handleBack} variant="outline" className="glass border-white/30 text-white hover:bg-white/10">Zurück</Button>
                     </div>
                     <p className="text-white/60 text-xs mt-4">Hinweis: Das System begrenzt kurzfristig zu viele Anfragen (429). Ein erneuter Versuch hilft meist sofort.</p>
                   </>
