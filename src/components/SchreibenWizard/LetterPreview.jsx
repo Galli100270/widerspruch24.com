@@ -51,12 +51,12 @@ export default function LetterPreview({ letterId, t, language, onBack }) {
         ${[recipient.strasse, `${recipient.plz||''} ${recipient.ort||''}`].filter(Boolean).map(l => `<div style="margin-bottom:0.2cm;">${l}</div>`).join('')}
       </div>
       <div style="text-align:right; margin-bottom:2cm;">${(sender.ort || 'Musterstadt')}, den ${dateStr}</div>
-      <div style="margin-bottom:2cm; font-weight:bold;">${subject}</div>
-      <div style="margin-bottom:1.5cm;">${t('letterGreeting')}</div>
+      <div style="margin-bottom:2cm; font-weight:bold;">${subjectText}</div>
+      <div style="margin-bottom:1.5cm;">${greetingText}</div>
       <div style="margin-bottom:2cm; text-align:justify;">
         ${body}
       </div>
-      <div style="margin-bottom:3cm;">${t('letterClosing')}</div>
+      <div style="margin-bottom:3cm;">${closingText}</div>
       <div style="font-weight:bold;">${sender.name || ''}</div>
     </div>`;
   };
