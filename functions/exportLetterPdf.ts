@@ -1,5 +1,13 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.7.1';
-import { jsPDF } from 'npm:jspdf@2.5.1';
+/*
+Musterfall (Beispiel-Aufruf):
+await base44.functions.invoke('exportLetterPdf', {
+  title: 'Widerspruch_Telekom_KD-12345',
+  text: 'Sehr geehrte Damen und Herren, ... Mit freundlichen Grüßen\nMax Mustermann'
+});
+Antwort: PDF-Stream als Datei-Download.
+*/
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { jsPDF } from 'npm:jspdf@2.5.2';
 
 Deno.serve(async (req) => {
   try {

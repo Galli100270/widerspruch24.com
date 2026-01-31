@@ -1,12 +1,19 @@
+/*
+Musterfall (Beispiel-Aufruf):
+await base44.functions.invoke('legalResearch', {
+  topic: 'Widerspruch / Telekom-Rechnung',
+  facts: { reason: 'falsche Abrechnung', referenz: 'KD-12345', amount_total: 89.90 },
+  language: 'de'
+});
+Erwartet: { research: { statutes: [...], case_law: [...], ... } }
+*/
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Auth optional: Gastnutzer erlaubt
+    await base44.auth.me().catch(() => null);
 
     const body = await req.json().catch(() => ({}));
     const { topic = 'Widerspruch / Verwaltungs- und Zivilrecht', facts = {}, language = 'de' } = body || {};
