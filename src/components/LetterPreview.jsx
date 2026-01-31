@@ -85,7 +85,7 @@ const LetterPreview = ({ caseData, generatedText, t, language = 'de', showPartia
 
       {/* Content */}
       <div className="mb-8">
-        <div className="mb-4">{t('letterGreeting')}</div>
+        <div className="mb-4">{greetingText}</div>
         
         <div className="mb-4 whitespace-pre-line text-justify leading-relaxed relative">
           {visibleText}
@@ -96,10 +96,10 @@ const LetterPreview = ({ caseData, generatedText, t, language = 'de', showPartia
               </span>
               <div className="text-center mt-6 p-4 bg-gray-100 border border-gray-300 rounded-lg">
                 <div className="text-gray-800 font-semibold">
-                  {t('previewHiddenWords', { count: words.length - Math.floor(words.length * 0.75)})}
+                  {t && t('previewHiddenWords', { count: words.length - Math.floor(words.length * 0.75)})}
                 </div>
                 <div className="text-sm text-gray-600 mt-1">
-                  {t('previewUnlockHint')}
+                  {t && t('previewUnlockHint')}
                 </div>
               </div>
             </>
@@ -112,7 +112,7 @@ const LetterPreview = ({ caseData, generatedText, t, language = 'de', showPartia
           </div>
         )}
 
-        <div className="mb-8">{t('letterClosing')}</div>
+        <div className="mb-8">{closingText}</div>
         
         {/* Signature */}
         <div className="mt-16 mb-8">
