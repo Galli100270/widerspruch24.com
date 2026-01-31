@@ -121,10 +121,6 @@ const LetterPreview = ({ caseData, generatedText, t, language = 'de', showPartia
         </div>
       </div>
 
-      {/* Professional Footer */}
-      <div className="text-xs text-gray-500 text-center mt-12 pt-4 border-t">
-        Erstellt mit Widerspruch24.de
-      </div>
     </div>
   );
 };
