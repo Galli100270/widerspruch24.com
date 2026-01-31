@@ -1,4 +1,3 @@
-
 export const translations = {
   de: {
     appName: "Widerspruch24",
@@ -9,6 +8,7 @@ export const translations = {
       save: "Speichern",
       back: "Zurück",
       unknown: "Unbekannt",
+      continue: "Weiter",
       reason_from_scan: "Begründung aus Scan extrahiert"
     },
     nav: {
@@ -147,6 +147,8 @@ export const translations = {
       removePage: "Seite entfernen",
       // Statusmeldungen
       uploadingFile: "Lade Datei hoch",
+      uploadingFilesProgress: "Lade Dateien hoch ({count}/{total})...",
+      extractingData: "Extrahiere Daten...",
       optimizingImage: "Optimiere Bild",
       processingOCR: "Texterkennung läuft (OCR)",
       analyzingContent: "Analysiere Inhalt...",
@@ -388,6 +390,11 @@ export const translations = {
       emailSendError: "Fehler beim E-Mail-Versand",
       cancel: "Abbrechen"
     },
+    analysis: {
+      headline: "Analyse",
+      subline: "Wir prüfen Ihr Dokument",
+      label: { "1": "Upload", "2": "Erkennung", "3": "Analyse", "4": "Ergebnis" }
+    },
     progress: {
       title: {
         working: "Wir arbeiten für dich…",
@@ -398,6 +405,18 @@ export const translations = {
         working: "Dein Dokument entsteht gerade",
         error: "Keine Sorge, wir kriegen das hin"
       },
+      // Legacy keys for compatibility
+      start: "Start",
+      done: "Fertig!",
+      doneDesc: "Alles abgeschlossen.",
+      converting: "Konvertiere...",
+      convertingDesc: "Dateien werden umgewandelt.",
+      uploading: "Hochladen...",
+      uploadingDesc: "Wir laden Ihre Dateien hoch.",
+      ocr: "Texterkennung",
+      ocrDesc: "Wir lesen Ihr Dokument aus.",
+      drafting: "Entwurf",
+      draftingDesc: "Wir formulieren Ihren Text.",
       steps: {
         uploading: "Upload",
         convert_heic: "HEIC-Konvertierung", // NEU
@@ -538,6 +557,7 @@ export const translations = {
       save: "Save",
       back: "Back",
       unknown: "Unknown",
+      continue: "Continue",
       reason_from_scan: "Reason extracted from scan"
     },
     nav: {
@@ -688,6 +708,8 @@ export const translations = {
       pleaseWait: "Please wait a moment.",
       optimizingImage: "Optimizing image...",
       uploadingFile: "Uploading file...",
+      uploadingFilesProgress: "Uploading files ({count}/{total})...",
+      extractingData: "Extracting data...",
       processingOCR: "Extracting text (OCR)...",
       analyzingContent: "Analyzing content...",
       validatingData: "Validating data...",
@@ -918,6 +940,18 @@ export const translations = {
         working: "Your document is being created",
         error: "Don't worry, we'll get this sorted"
       },
+      // Legacy keys for compatibility
+      start: "Start",
+      done: "Done!",
+      doneDesc: "All finished.",
+      converting: "Converting...",
+      convertingDesc: "Converting your files.",
+      uploading: "Uploading...",
+      uploadingDesc: "We are uploading your files.",
+      ocr: "Text recognition",
+      ocrDesc: "Reading your document.",
+      drafting: "Drafting",
+      draftingDesc: "We are drafting your text.",
       steps: {
         uploading: "Upload",
         convert_heic: "HEIC Conversion", // NEW
@@ -1058,6 +1092,7 @@ export const translations = {
       save: "حفظ",
       back: "رجوع",
       unknown: "غير معروف",
+      continue: "متابعة",
       reason_from_scan: "تم استخراج السبب من المسح الضوئي"
     },
     nav: {
@@ -1208,6 +1243,8 @@ export const translations = {
         pleaseWait: "يرجى الانتظار لحظة.",
         optimizingImage: "تحسين الصورة...",
         uploadingFile: "جاري تحميل الملف...",
+        uploadingFilesProgress: "جارٍ رفع الملفات ({count}/{total})...",
+        extractingData: "جارٍ استخراج البيانات...",
         processingOCR: "استخراج النص (OCR)...",
         analyzingContent: "تحليل المحتوى...",
         validatingData: "التحقق من البيانات...",
@@ -1437,9 +1474,21 @@ export const translations = {
         error: "عفواً، هناك خطأ ما..."
       },
       subtitle: {
-        working: "وثيقتك قيد الإنشاء",
-        error: "لا تقلق، سنتولى الأمر"
-      },
+          working: "وثيقتك قيد الإنشاء",
+          error: "لا تقلق، سنتولى الأمر"
+        },
+        // مفاتيح قديمة للتوافق
+        start: "ابدأ",
+        done: "تم!",
+        doneDesc: "اكتمل كل شيء.",
+        converting: "جارٍ التحويل...",
+        convertingDesc: "جارٍ تحويل الملفات.",
+        uploading: "جارٍ الرفع...",
+        uploadingDesc: "نقوم برفع ملفاتك.",
+        ocr: "التعرف على النص",
+        ocrDesc: "نقرأ مستندك.",
+        drafting: "الصياغة",
+        draftingDesc: "نقوم بصياغة نصك.",
       steps: {
         uploading: "الرفع",
         convert_heic: "تحويل HEIC", // NEW
