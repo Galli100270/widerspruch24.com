@@ -65,9 +65,9 @@ const LetterPreview = ({ caseData, generatedText, t, language = 'de', showPartia
         </div>
       )}
 
-      {/* Recipient Address */}
+      {/* Empfängeranschrift – DIN 5008 Blocksatz */}
       <div className="mb-12 font-medium">
-        <div>{caseData.sender_name}</div>
+        {caseData.sender_name && <div>{caseData.sender_name}</div>}
         {caseData.sender_address && caseData.sender_address.split('\n').map((line, idx) => (
           <div key={idx}>{line}</div>
         ))}
