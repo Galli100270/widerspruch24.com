@@ -502,7 +502,7 @@ const EditableLetterPreview = ({
                 marginBottom: '3cm',
                 fontSize: '12pt'
               }}>
-                {t('letterClosing')}
+                {closingText}
               </div>
 
               {/* Unterschriftenbereich */}
