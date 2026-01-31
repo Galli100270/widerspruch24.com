@@ -14,16 +14,21 @@ Deno.serve(async (_req) => {
       STRIPE_PRICE_BUNDLE5: env("STRIPE_PRICE_BUNDLE5"),
       STRIPE_PRICE_SUB_PRO: env("STRIPE_PRICE_SUB_PRO"),
       STRIPE_PRICE_SUB_BUSINESS: env("STRIPE_PRICE_SUB_BUSINESS"),
+      // New product-based config used by checkout functions
+      STRIPE_PRODUCT_MONTHLY: env("STRIPE_PRODUCT_MONTHLY"),
+      STRIPE_PRODUCT_CREDITS_20: env("STRIPE_PRODUCT_CREDITS_20"),
+      STRIPE_PRODUCT_PER_CASE: env("STRIPE_PRODUCT_PER_CASE"),
       APP_URL: env("APP_URL"),
     };
+
+    const hasLegacyPriceIds = flags.STRIPE_PRICE_SINGLE && flags.STRIPE_PRICE_BUNDLE5 && flags.STRIPE_PRICE_SUB_PRO && flags.STRIPE_PRICE_SUB_BUSINESS;
+    const hasProductIds = flags.STRIPE_PRODUCT_MONTHLY && flags.STRIPE_PRODUCT_CREDITS_20 && flags.STRIPE_PRODUCT_PER_CASE;
 
     const paymentsEnabled =
       flags.STRIPE_SECRET &&
       flags.STRIPE_WEBHOOK_SECRET &&
-      flags.STRIPE_PRICE_SINGLE &&
-      flags.STRIPE_PRICE_BUNDLE5 &&
-      flags.STRIPE_PRICE_SUB_PRO &&
-      flags.STRIPE_PRICE_SUB_BUSINESS;
+      flags.APP_URL &&
+      (hasLegacyPriceIds || hasProductIds);
 
     const body = {
       ok: true,

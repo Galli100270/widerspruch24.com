@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
 
   let event;
   try {
-    event = stripe.webhooks.constructEvent(raw, sig, webhookSecret);
+    event = await stripe.webhooks.constructEventAsync(raw, sig, webhookSecret);
   } catch (err) {
     return Response.json({ error: 'INVALID_SIGNATURE' }, { status: 400 });
   }
@@ -129,6 +129,9 @@ Deno.serve(async (req) => {
       const USER_ID = expanded?.metadata?.userId || expanded?.metadata?.user_id || expanded?.metadata?.user || null;
       const CUSTOMER_EMAIL = expanded?.customer_details?.email || expanded?.customer_email || null;
       const CUSTOMER_ID = typeof expanded.customer === 'string' ? expanded.customer : expanded.customer?.id || null;
+      const KIND = expanded?.metadata?.kind || null;
+      const PACK = expanded?.metadata?.pack || null;
+      const CASE_ID = expanded?.metadata?.caseId || null;
 
       const user = await findUserByHints(base44, { userId: USER_ID, email: CUSTOMER_EMAIL, stripeCustomerId: CUSTOMER_ID });
 
@@ -163,6 +166,41 @@ Deno.serve(async (req) => {
       } else if (user && mode === 'subscription' && (priceId === PRICE_SUB_PRO || priceId === PRICE_SUB_BUSINESS)) {
         const tier = priceId === PRICE_SUB_PRO ? 'pro' : 'business';
         const quota = priceId === PRICE_SUB_PRO ? 10 : 40;
+        await base44.asServiceRole.entities.User.update(user.id, {
+          subscription_type: tier,
+          subscription_status: 'active',
+          monthly_quota: quota,
+          monthly_quota_used: 0,
+          monthly_quota_reset_at: addMonths(new Date().toISOString(), 1),
+          stripe_customer_id: user.stripe_customer_id || CUSTOMER_ID || null,
+          stripe_subscription_id: expanded?.subscription?.id || expanded?.subscription || user.stripe_subscription_id || null,
+          needs_payment: false,
+          export_blocked_reason: null
+        });
+        effect = tier;
+      } else if (KIND === 'per_case' && CASE_ID) {
+        await base44.asServiceRole.entities.Case.update(CASE_ID, {
+          status: 'paid',
+          payment_intent_id: expanded.payment_intent || null
+        });
+        effect = 'single';
+      } else if (user && KIND === 'credits') {
+        const toAdd = Number(PACK || 20);
+        const credits = (user.credits || 0) + (isNaN(toAdd) ? 0 : toAdd);
+        const newExpiry = addMonths(new Date().toISOString(), 24);
+        const credits_expire_at = user.credits_expire_at && new Date(user.credits_expire_at) > new Date(newExpiry)
+          ? user.credits_expire_at
+          : newExpiry;
+        await base44.asServiceRole.entities.User.update(user.id, {
+          credits,
+          credits_expire_at,
+          stripe_customer_id: user.stripe_customer_id || CUSTOMER_ID || null,
+          needs_payment: false
+        });
+        effect = 'credits';
+      } else if (user && KIND === 'subscription') {
+        const tier = 'pro';
+        const quota = 10;
         await base44.asServiceRole.entities.User.update(user.id, {
           subscription_type: tier,
           subscription_status: 'active',

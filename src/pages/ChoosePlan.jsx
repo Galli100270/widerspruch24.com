@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -12,6 +11,8 @@ import { User } from '@/entities/User';
 import { trackEvent } from "@/components/lib/analytics";
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { configStatus } from "@/functions/configStatus";
+import { stripeCheckoutSubscription } from "@/functions/stripeCheckoutSubscription";
+import { stripeCheckoutCredits } from "@/functions/stripeCheckoutCredits";
 
 export default function ChoosePlan() {
   const { t, formatCurrency } = useLocalization();
