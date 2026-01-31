@@ -58,10 +58,12 @@ const LetterPreview = ({ caseData, generatedText, t, language = 'de', showPartia
       lineHeight: '1.6',
       minHeight: '800px'
     }}>
-      {/* Professional Header */}
-      <div className="text-sm mb-8 text-gray-600">
-        {senderName} • {senderStreet} • {senderCity}
-      </div>
+      {/* DIN 5008 Senderzeile (Kopfzeile) */}
+      {senderName && (
+        <div className="text-sm mb-8 text-gray-600">
+          {senderName}{senderStreet ? ` • ${senderStreet}` : ''}{senderCity ? ` • ${senderCity}` : ''}
+        </div>
+      )}
 
       {/* Recipient Address */}
       <div className="mb-12 font-medium">
