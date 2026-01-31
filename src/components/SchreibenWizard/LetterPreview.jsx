@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Letter } from '@/entities/Letter';
 import { generateLetter } from '@/functions/generateLetter';
@@ -28,7 +27,12 @@ export default function LetterPreview({ letterId, t, language, onBack }) {
     const dateStr = format(new Date(), 'd. MMMM yyyy', { locale: de });
     const sender = letter?.parties?.sender || {};
     const recipient = letter?.parties?.recipient || {};
-    const subject = t('letter.previewTitle'); // einfache Betreff-Fallback
+    const _s = t ? t('letter.previewTitle') : '';
+    const subjectText = _s && _s !== 'letter.previewTitle' ? _s : 'Widerspruch'; // DIN: Betreff fett
+    const _g = t ? t('letterGreeting') : '';
+    const greetingText = _g && _g !== 'letterGreeting' ? _g : 'Sehr geehrte Damen und Herren,';
+    const _c = t ? t('letterClosing') : '';
+    const closingText = _c && _c !== 'letterClosing' ? _c : 'Mit freundlichen Grüßen';
 
     const body = (() => {
       const isContentHTML = typeof contentHTML === 'string' && /<\/?[a-z][\s\S]*>/i.test(contentHTML);
