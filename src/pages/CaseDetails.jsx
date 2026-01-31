@@ -34,7 +34,7 @@ import { useFormTelemetry } from "@/components/hooks/useFormTelemetry";
 export default function CaseDetails() {
   const { t, language } = useLocalization();
   const navigate = useNavigate();
-  const { guestSession, isGuest } = useGuestSession(language);
+  const { guestSession, isGuest, isLoading: guestLoading } = useGuestSession(language);
 
   const urlParams = new URLSearchParams(window.location.search);
   const caseId = urlParams.get('case_id');
