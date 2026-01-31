@@ -65,13 +65,17 @@ export default function ChoosePlan() {
       let checkoutUrl;
 
       if (planType === 'subscription') {
-        // const { url } = await callStripeCheckoutSubscription({ userId: user.id });
-        checkoutUrl = 'https://checkout.stripe.com/c/pay/...#dummy_subscription';
-        alert(`Simulation: Weiterleitung zu Stripe für Abo (${formatCurrency(20)}/Monat). URL: ${checkoutUrl}`);
+        const response = await stripeCheckoutSubscription({ userId: user.id });
+        checkoutUrl = response.data?.url;
+        if (!checkoutUrl) throw new Error(response.data?.error || 'Keine Checkout-URL erhalten');
+        window.location.href = checkoutUrl;
+        return;
       } else if (planType === 'credits') {
-        // const { url } = await callStripeCheckoutCredits({ pack: '5', userId: user.id });
-        checkoutUrl = 'https://checkout.stripe.com/c/pay/...#dummy_credits_5';
-        alert(`Simulation: Weiterleitung zu Stripe für 5er-Paket (${formatCurrency(22.50)}). URL: ${checkoutUrl}`);
+        const response = await stripeCheckoutCredits({ pack: '20', userId: user.id });
+        checkoutUrl = response.data?.url;
+        if (!checkoutUrl) throw new Error(response.data?.error || 'Keine Checkout-URL erhalten');
+        window.location.href = checkoutUrl;
+        return;
       } else if (planType === 'per_case') {
         await selectPlan(planType); // Store decision without immediate payment
         navigate(createPageUrl('Dashboard'));
