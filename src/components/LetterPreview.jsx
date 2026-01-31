@@ -35,10 +35,21 @@ const LetterPreview = ({ caseData, generatedText, t, language = 'de', showPartia
   const visibleText = showPartial ? words.slice(0, Math.floor(words.length * 0.75)).join(' ') : generatedText;
   const hasMoreContent = showPartial && words.length > Math.floor(words.length * 0.75);
 
-  const subject = t('letterSubject', { date: documentDate, reference: caseData.reference_number || '...' });
-  const senderName = "Max Mustermann";
-  const senderStreet = "Musterstraße 1";
-  const senderCity = "12345 Musterstadt";
+  const safeT = (key, vars) => {
+    if (!t) return '';
+    const val = t(key, vars);
+    return val && val !== key ? val : '';
+  };
+  const ref = caseData.reference_number || '';
+  const subjectText = safeT('letterSubject', { date: documentDate, reference: ref }) || `Widerspruch gegen Bescheid vom ${documentDate}${ref ? ` – AZ: ${ref}` : ''}`;
+  const greetingText = safeT('letterGreeting') || 'Sehr geehrte Damen und Herren,';
+  const closingText = safeT('letterClosing') || 'Mit freundlichen Grüßen';
+
+  const senderName = caseData.customer_name || '';
+  const senderAddress = caseData.customer_address || '';
+  const senderAddressLines = senderAddress ? senderAddress.split('\n') : [];
+  const senderStreet = senderAddressLines[0] || '';
+  const senderCity = senderAddressLines[1] || '';
 
   return (
     <div className="bg-white text-black p-8 rounded-lg shadow-2xl max-w-4xl mx-auto" style={{
