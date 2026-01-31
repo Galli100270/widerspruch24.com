@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { GuestSession } from '@/entities/GuestSession';
 import { User } from '@/entities/User';
@@ -114,23 +113,46 @@ export const useGuestSession = (language = 'de') => {
         return; // Server session handled, exit early
       }
 
-      // 5) Keine Server-Session gefunden oder API-Fehler -> lokale Session (kein Create-Aufruf!)
-      const expiresAt = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days expiration for new local sessions
+      // 5) Keine Server-Session gefunden -> versuche, eine Server-Session anzulegen (damit RLS auf Case greift)
+      const expiresAt = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 Tage
+      try {
+        const created = await GuestSession.create({
+          token_hash: tokenHash,
+          locale: language,
+          started_at: now.toISOString(),
+          ends_at: expiresAt.toISOString(),
+          last_seen_at: now.toISOString(),
+          status: 'active',
+        });
+        if (created && created.id) {
+          setGuestSession(created);
+          setIsGuest(true);
+          setGuestExpired(false);
+          const diffDays = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          setDaysLeft(diffDays);
+          setIsLoading(false);
+          return; // Erfolgreich auf Server erstellt – fertig
+        }
+      } catch (createErr) {
+        console.warn('Server GuestSession.create failed, falling back to local session:', createErr);
+      }
+
+      // 5b) Fallback: Lokale Session (ohne Server-ID) – nur falls Create nicht mglich
       const localSession = {
-        id: null, // IMPORTANT: Indicate this is a local-only session, not backed by server
+        id: null, // Kennzeichnet lokale Session (kein Server-Record) – nur Fallback
         token_hash: tokenHash,
         locale: language,
         started_at: now.toISOString(),
         ends_at: expiresAt.toISOString(),
         last_seen_at: now.toISOString(),
         status: 'active',
-        free_exports_used: 0 // New field for local guests
+        free_exports_used: 0
       };
 
       setGuestSession(localSession);
       setIsGuest(true);
       setGuestExpired(false);
-      setDaysLeft(30); // Default to 30 days for new local session
+      setDaysLeft(30);
     } catch (error) {
       console.error('Error initializing guest session (general catch, falling back to local):', error);
       // In case of any unexpected error, still try to set a basic local session
