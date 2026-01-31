@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -41,6 +40,8 @@ export default function SchreibenPage({ t, language }) {
   const [templateKeyFromQuery, setTemplateKeyFromQuery] = useState(null); // NEW STATE
 
   const [watchdogTriggered, setWatchdogTriggered] = useState(false); // NEW STATE
+  const [creatingOnPreview, setCreatingOnPreview] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   // Autosave: versuche lokale Sicherung zu laden, wenn kein Letter vorhanden und letterData noch nicht initialisiert
   useEffect(() => {
@@ -296,6 +297,17 @@ export default function SchreibenPage({ t, language }) {
     loadTemplate();
   }, [templateKeyFromQuery, letterData, language]);
 
+  // Auto-Heilung: Wenn auf Schritt 3 noch keine Letter-ID existiert (z.B. wegen Rate Limit), versuche Erstellung mit Backoff
+  useEffect(() => {
+    if (currentStep === 3 && !letterId && letterData && !creatingOnPreview) {
+      setCreatingOnPreview(true);
+      setCreateError('');
+      createLetterWithRetry()
+        .catch((e) => setCreateError(e?.message || 'Speichern fehlgeschlagen (Rate Limit).'))
+        .finally(() => setCreatingOnPreview(false));
+    }
+  }, [currentStep, letterId, letterData, creatingOnPreview]);
+
   // Steps configuration (simplified)
   const steps = [
     { number: 1, title: t('letter.step1'), subtitle: t('letter.step1Subtitle'), icon: Users },
@@ -403,6 +415,43 @@ export default function SchreibenPage({ t, language }) {
     }
 
     return sanitized;
+  };
+
+  const createLetterWithRetry = async (maxRetries = 3) => {
+    const data = sanitizeLetterData(letterData);
+    let lastErr = null;
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const created = await Letter.create({
+          ...data,
+          language,
+          ...(isGuest && guestSession?.id ? { guest_session_id: guestSession.id } : {})
+        });
+        setLetterId(created.id);
+        return created.id;
+      } catch (e) {
+        lastErr = e;
+        const msg = String(e?.message || '');
+        if (/429|rate limit/i.test(msg)) {
+          await new Promise(r => setTimeout(r, 800 * (i + 1)));
+          continue;
+        }
+        throw e;
+      }
+    }
+    throw lastErr || new Error('Erstellung fehlgeschlagen');
+  };
+
+  const retryCreate = async () => {
+    setCreatingOnPreview(true);
+    setCreateError('');
+    try {
+      await createLetterWithRetry();
+    } catch (e) {
+      setCreateError(e?.message || 'Speichern fehlgeschlagen.');
+    } finally {
+      setCreatingOnPreview(false);
+    }
   };
 
   const handleNext = async () => {
@@ -547,13 +596,35 @@ export default function SchreibenPage({ t, language }) {
             />
           )}
 
-          {currentStep === 3 && letterId && (
-            <LetterPreview
-              letterId={letterId}
-              t={t}
-              language={language}
-              onBack={handleBack}
-            />
+          {currentStep === 3 && (
+            letterId ? (
+              <LetterPreview
+                letterId={letterId}
+                t={t}
+                language={language}
+                onBack={handleBack}
+              />
+            ) : (
+              <div className="glass rounded-2xl p-8 text-center text-white">
+                {creatingOnPreview ? (
+                  <>
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3" />
+                    <div className="text-lg font-semibold">Speichere und generiere Vorschau</div>
+                    <div className="text-white/70 text-sm mt-1">Bei hoher Auslastung kann es kurz zu Wartezeiten kommen.</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-lg font-semibold mb-2">Entwurf noch nicht gespeichert</div>
+                    {createError && <div className="text-red-300 text-sm mb-4">{createError}</div>}
+                    <div className="flex justify-center gap-3">
+                      <Button onClick={retryCreate} className="glass text-white border-white/30 hover:glow">Erneut versuchen</Button>
+                      <Button onClick={handleBack} variant="outline" className="glass border-white/30 text-white hover:bg-white/10">Zur FCck</Button>
+                    </div>
+                    <p className="text-white/60 text-xs mt-4">Hinweis: Das System begrenzt kurzfristig zu viele Anfragen (429). Ein erneuter Versuch hilft meist sofort.</p>
+                  </>
+                )}
+              </div>
+            )
           )}
         </div>
 
