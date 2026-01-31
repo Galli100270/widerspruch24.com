@@ -392,11 +392,15 @@ TEXT:
         ].filter(Boolean).join(" | ");
         const prompt = `
         Rolle & Perspektive: Ich-Form des Absenders (selbst handelnd). Keine Hinweise auf Anwälte/Kanzlei/Vertretung, keine Plattform-/KI-/Tool-Bezüge.
-        Ziel: gerichtsfestes, lückenlos begründetes Widerspruchsschreiben in nüchternem, präzisem Stil.
+        Ziel: gerichtsfestes, lückenlos begründetes Widerspruchs-/Abwehrschreiben in nüchternem, präzisem Stil.
         Kontext: ${header || "—"}
         Meine Begründung (aufgreifen, straffen): """${userReason}"""
         Weitere Details/Belege: """${detail}"""
         Gewünschtes Ergebnis: """${requested}"""
+
+        Arbeitsgrundsatz:
+        - Keine Ergänzung/Erfindung von Tatsachen.
+        - Unklare/fehlende Angaben nur juristisch bewerten (Beweislast/Indizien), ohne dies im Schreiben auszubreiten.
 
         Struktur (reiner Fließtext, keine Markdown-Syntax):
         1) Sachverhalt (kurz, geordnet, mit Aktenzeichen/Datum).

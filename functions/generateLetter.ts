@@ -56,6 +56,11 @@ Keine Hinweise auf Plattformen, KI, Tools oder interne Workflows.
 Stil: nüchtern, präzise, professionell; keine Umgangssprache, keine weichen Formulierungen.
 Form: DIN 5008, klare Überschriften/Absätze, keine Markdown-Syntax.
 
+Arbeitsgrundsatz:
+- Nutzerangaben gelten als Tatsachenvortrag; KEINE Ergänzung/Erfindung.
+- Unklare/widersprüchliche/fehlende Angaben nur juristisch bewerten (Beweislast, Indizwirkung), keine „internen Hinweise“ im Schriftsatz.
+- Nur allgemein anerkannte rechtliche Maßstäbe ergänzen, keine neuen Tatsachen.
+
 Juristische Anforderungen (zwingend):
 - Struktur: 1) Sachverhalt, 2) Rechtliche Würdigung, 3) Anspruchsprüfung (Tatbestandsmerkmale → Subsumtion → Ergebnis), 4) Ergebnis/Rechtsfolge, 5) Antizipierte Gegenargumente (mit Entkräftung), 6) Antrag/Frist, 7) Quellen.
 - Paragraphengestützt mit präzisen Fundstellen (z.B. § 280 Abs. 1, § 254, § 249, § 241 Abs. 2, § 823, § 831 BGB je nach Fall). Keine pauschalen Normnennungen ohne Subsumtion.
@@ -65,8 +70,9 @@ Juristische Anforderungen (zwingend):
 - Abschluss: Quellenliste (8–12 belastbare Fundstellen; z.B. gesetze-im-internet.de, dejure.org, EUR-Lex) mit Datum „Stand: <heute>“. `;
 
     const userPrompt = `
-Erstelle ein belastbares Widerspruchsschreiben auf Basis der Daten.
-Perspektive: Ich-Form des Absenders (selbst handelnde Person). Kein Kanzlei-/Anwalts-/Vertretungsbezug und keinerlei Hinweise auf Plattformen/KI/Tools.
+Erstelle ein belastbares Widerspruchs-/Abwehrschreiben ausschließlich auf Basis der gelieferten Informationen.
+Perspektive: Ich-Form des Absenders (eigenständig handelnde Person). Kein Kanzlei-/Anwalts-/Vertretungsbezug und keinerlei Hinweise auf Plattformen/KI/Tools.
+Arbeitsgrundsatz: KEINE Tatsachenergänzungen; unklare/fehlende Angaben nur juristisch bewerten (Beweislast beachten), ohne dies im Schreiben auszuschmücken.
 Struktur: Betreff, Anrede, 1) Sachverhalt, 2) Rechtliche Würdigung, 3) Anspruchsprüfung (Tatbestandsmerkmale – Subsumtion – Ergebnis), 4) Ergebnis/Rechtsfolge, 5) Antizipierte Gegenargumente (mit Entkräftung), 6) Antrag/Frist, 7) Quellen, Grußformel + Name.
 
 ABSENDER:
@@ -75,11 +81,13 @@ ${parties?.sender?.strasse || ''}
 ${parties?.sender?.plz || ''} ${parties?.sender?.ort || ''}
 ${parties?.sender?.email ? 'E-Mail: ' + parties.sender.email : ''}
 ${parties?.sender?.tel ? 'Tel.: ' + parties.sender.tel : ''}
+Rolle (falls vorhanden): ${normFacts.rolle || normFacts.role || ''}
 
 EMPFÄNGER:
 ${parties?.recipient?.name || ''}
 ${parties?.recipient?.strasse || ''}
 ${parties?.recipient?.plz || ''} ${parties?.recipient?.ort || ''}
+Aktenzeichen/Referenz (falls vorhanden): ${normFacts.referenz || normFacts.kundennummer || ''}
 
 SACHVERHALT / KURZINPUT:
 ${shortcodes || ''}
@@ -87,10 +95,15 @@ ${shortcodes || ''}
 STRUKTURIERTE FAKTEN:
 ${JSON.stringify(normFacts, null, 2)}
 
+KONFIGURATION (falls vorhanden):
+- Ton: ${normFacts.ton || normFacts.tone || 'sachlich-neutral'}
+- Eskalationsstufe: ${normFacts.escalation || 'Erstes Widerspruchsschreiben'}
+
 WEITERE ANWEISUNGEN:
 - Anrede: "${personalizedGreeting}"
 - Anspruchsprüfung mit klaren Tatbestandsmerkmalen und konkreter Subsumtion (z.B. §§ 280 Abs. 1, 241 Abs. 2, 249, 254, 823, 831 BGB – nur bei Relevanz).
 - Relevante DIN-/technische Normen rechtlich einordnen (z.B. Verkehrssicherungspflichten), sofern einschlägig.
+- Beweismittel: nur die vorliegenden (z.B. Anlagen/Schriftverkehr) würdigen; nichts hinzufügen.
 - Frist: ${normFacts.frist_tage} Tage ab heute inkl. Datum und Rechtsfolgenhinweis.
 - Typische Gegeneinwände (Mitverschulden, Pflichtenkreise, Kausalität) antizipieren und widerlegen mit Normen/Rechtsprechung.
 - Stil: nüchtern, präzise, ohne Umgangssprache; keine verbotenen Formulierungen (Anwalt/Kanzlei/Vertretung/„wir vertreten“ etc.).
