@@ -470,7 +470,7 @@ const EditableLetterPreview = ({
                 marginBottom: '2cm',
                 fontSize: '12pt'
               }}>
-                <div style={{ fontWeight: 'bold' }}>{t('letterSubject', { date: formatSafeDate(caseData.document_date), reference: caseData.reference_number || '...' })}</div>
+                <div style={{ fontWeight: 'bold' }}>{subjectText}</div>
               </div>
 
               {/* Anrede */}
