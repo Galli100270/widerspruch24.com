@@ -45,24 +45,30 @@ Deno.serve(async (req) => {
 
     const recipientLastName = getLastName(parties?.recipient?.name);
     const personalizedGreeting = recipientLastName
-      ? `Sehr geehrte${recipientLastName.toLowerCase().includes('frau') || Math.random() > 0.5 ? ' Frau' : 'r Herr'} ${recipientLastName},`
+      ? `Sehr geehrte/r ${recipientLastName},`
       : "Sehr geehrte Damen und Herren,";
 
-    const systemPrompt = `Du bist ein erfahrener juristischer Sachbearbeiter (deutsches Recht). Verfasse professionelle, rechtlich fundierte Schreiben nach DIN 5008 (Variante A, klare Absätze, sachlich-höflicher Ton). Du gibst KEINE individuelle Rechtsberatung.
+    const systemPrompt = `Du bist ein spezialisiertes Verfasser-Assistenzsystem für deutsche Rechtsanwält:innen.
+Ziel: anwaltlich belastbare, vor Gericht vertretbare Schriftsätze ohne argumentative Lücken.
+Stil: nüchtern, präzise, keine Umgangssprache, keine Bitten, kein Konjunktiv der Unsicherheit.
+Form: DIN 5008, klare Überschriften und Absätze, keine Markdown-Formatierung.
 
-Vorgaben zur juristischen Tiefe:
-- Arbeite mit präzisen Normketten (z. B. § 280 Abs. 1, § 286 Abs. 1 BGB i.V.m. § 241 Abs. 2 BGB) und nutze Abs., S., Nr., lit. wo einschlägig.
-- Zitiere aktuelle Rechtsprechung (Gericht, Datum, Az.), ggf. auch EU-Recht/Verordnungen sowie Landesrecht/Verwaltungsvorschriften.
-- Antizipiere typische Gegenargumente der Gegenseite und entkräfte sie kurz, sachlich.
-- Mindestumfang an Belegen: 8–12 belastbare Nachweise (Gemisch aus Gesetzen, Urteilen, ggf. Kommentierung/amtlichen Hinweisen).
-- Am Ende kurze Quellenliste mit „Stand: <Datum>“ und seriösen Links (z. B. gesetze-im-internet.de, dejure.org, EUR-Lex).`;
+Juristische Anforderungen (zwingend):
+- Strikte Trennung der Teile: 1) Sachverhalt, 2) Rechtliche Würdigung, 3) Anspruchsprüfung (Tatbestandsmerkmale + Subsumtion + Ergebnis), 4) Ergebnis/Rechtsfolge, 5) Antizipierte Gegenargumente (mit Entkräftung), 6) Antrag/Frist, 7) Quellen.
+- Paragraphengestützte Argumentation mit präzisen Fundstellen (z.B. § 280 Abs. 1 BGB; § 254 BGB; § 823 Abs. 1 BGB; § 831 BGB; ggf. § 249 BGB; § 241 Abs. 2 BGB). Keine pauschalen Normnennungen.
+- Subsumtion: Tatbestandsmerkmale nennen und konkret auf den Einzelfall anwenden; erläutere, warum ein Anspruch besteht oder scheitert.
+- Technische Normen (DIN/anerkanntes Regelwerk) berücksichtigen, wenn relevant; rechtliche Einordnung (z.B. Verkehrssicherungspflicht) vornehmen.
+- Aktualität: auf aktuelle Gesetzeslage und Rechtsprechung abstellen; Beispiele mit Gericht, Datum, Aktenzeichen (sofern öffentlich zugänglich). Veraltete Standardfloskeln sind unzulässig.
+- Keine Aussagen ohne Beleg. Bei Unsicherheit: eng formulieren („nach überwiegender Auffassung“, „herrschende Meinung“), aber stets mit Quelle.
+- Quellenliste am Schluss: mind. 8–12 belastbare Fundstellen (Gesetze, Urteile, ggf. amtliche Hinweise/Kommentierungen) mit Kurz-URL (gesetze-im-internet.de, dejure.org, EUR-Lex etc.).`;
 
     const userPrompt = `
-Erstelle ein ausführliches, rechtlich fundiertes Schreiben basierend auf den folgenden Daten. Lege besonderen Schwerpunkt auf belastbare, präzise Rechtsgrundlagen; Ziel ist eine argumentativ „angriffsresistente“ Begründung.
+Erstelle ein anwaltlich belastbares Widerspruchsschreiben auf Basis der Daten (siehe unten).
+Nutze zwingend die Struktur: Betreff, Anrede, 1) Sachverhalt, 2) Rechtliche Würdigung, 3) Anspruchsprüfung (Tatbestandsmerkmale – Subsumtion – Ergebnis), 4) Ergebnis/Rechtsfolge, 5) Antizipierte Gegenargumente (mit Entkräftung), 6) Antrag/Frist, 7) Quellen, Grußformel.
 
 ABSENDER:
 ${parties?.sender?.name || ''}
-${parties?.sender?.strasse || ''}  
+${parties?.sender?.strasse || ''}
 ${parties?.sender?.plz || ''} ${parties?.sender?.ort || ''}
 ${parties?.sender?.email ? 'E-Mail: ' + parties.sender.email : ''}
 ${parties?.sender?.tel ? 'Tel.: ' + parties.sender.tel : ''}
@@ -72,21 +78,21 @@ ${parties?.recipient?.name || ''}
 ${parties?.recipient?.strasse || ''}
 ${parties?.recipient?.plz || ''} ${parties?.recipient?.ort || ''}
 
-SACHVERHALT UND ANLIEGEN:
+SACHVERHALT / KURZINPUT:
 ${shortcodes || ''}
 
-STRUKTURIERTE DATEN:
+STRUKTURIERTE FAKTEN:
 ${JSON.stringify(normFacts, null, 2)}
 
-ANWEISUNGEN FÜR DEN BRIEF:
-- Verwende die Anrede: "${personalizedGreeting}"
-- Gliedere nach DIN 5008: Betreff, Anrede, Sachverhalt, Rechtliche Würdigung (mehr Normen als Fließtext: für jeden Punkt konkrete Paragrafen incl. Absatz/Satz/Nummer, z. B. § 280 Abs. 1, § 286 Abs. 1 BGB; BGH, Urt. v. <Datum>, Az. ...), Antrag/Frist (konkretes Datum + Rechtsfolgenhinweis), Grußformel.
-- Setze die Frist auf ${normFacts.frist_tage} Kalendertage ab heutigem Datum und nenne das konkrete Datum.
-- Antizipiere und entkräfte 2–3 naheliegende Gegenargumente mit Gegenbelegen (Normen/Rechtsprechung).
-- Höflich-bestimmter, anwaltlicher Stil; keine Drohkulisse.
-- Am Ende: „Quellen (Auszug) – Stand: ${new Date().toLocaleDateString('de-DE')}“ mit mind. 8–12 Fundstellen inkl. Kurz-Link.
-- Kein Markdown, reiner Text.
-`;
+WEITERE ANWEISUNGEN:
+- Anrede verwenden: "${personalizedGreeting}"
+- Anspruchsprüfung mit klaren Tatbestandsmerkmalen und konkreter Subsumtion (z.B. aus §§ 280 Abs. 1, 241 Abs. 2 BGB; 823, 831 BGB; 249 BGB; 254 BGB – je nach Fall). Keine pauschalen Normnennungen.
+- Wenn einschlägig: technische Normen (DIN/Regelwerke) benennen und rechtlich einordnen (z.B. Verkehrssicherungspflichten).
+- Frist: ${normFacts.frist_tage} Tage ab heute; nenne das konkrete Datum und die Rechtsfolgen bei fruchtlosem Ablauf.
+- Antizipiere typische Einwände (z.B. Mitverschulden, fehlende Pflichtverletzung, fehlende Kausalität) und entkräfte sie mit Normen/Rechtsprechung.
+- Nüchterner, präziser Kanzlei-Stil; keine Emotionalität, keine weichen Formulierungen.
+- Schluss: „Quellen (Auszug) – Stand: ${new Date().toLocaleDateString('de-DE')}“ mit mind. 8–12 belastbaren Fundstellen (Gesetze/Urteile/amtliche Hinweise) und Kurz-Links.
+- Ausgabe als reiner Fließtext ohne Markdown.`;
 
     // Integration über die base44-Instanz aufrufen
     // Automatische juristische Recherche (Best-Effort, keine harte Abhängigkeit)
@@ -108,7 +114,7 @@ ANWEISUNGEN FÜR DEN BRIEF:
       response_json_schema: null,
     });
 
-    const generatedText = result;
+    const generatedText = typeof result === 'string' ? result : (result?.text || result?.content || '');
     if (!generatedText) {
       throw new Error('AI failed to generate text.');
     }

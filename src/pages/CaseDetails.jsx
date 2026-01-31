@@ -391,22 +391,26 @@ TEXT:
           caseData?.amount ? `Betrag: ${caseData.amount} €` : null
         ].filter(Boolean).join(" | ");
         const prompt = `
-Rolle & Stil: Schreibe einen Widerspruch in der ICH-Form für eine Privatperson. Sprache B1–B2, freundlich aber bestimmt, präzise. Keine Paragraphen zitieren; nur allgemeine rechtliche Prinzipien knapp einordnen. Nichts erfinden.
-Kontext: ${header || "—"}
-Meine Begründung (wörtlich aufgreifen, sprachlich glätten): """${userReason}"""
-Leitfrage: Wenn keine Frage im obigen Text enthalten ist, formuliere eine präzise Leitfrage (z. B. „Ist der Preis zu hoch?“) und beziehe dich darauf.
-Weitere Details/Belege: """${detail}"""
-Gewünschtes Ergebnis: """${requested}"""
+        Rolle & Stil: Anwaltlich belastbares Widerspruchsschreiben, nüchtern und präzise, ohne Umgangssprache. Ziel: argumentative Lücken schließen, gerichtsfest.
+        Kontext: ${header || "—"}
+        Meine Begründung (aufgreifen, sprachlich straffen): """${userReason}"""
+        Weitere Details/Belege: """${detail}"""
+        Gewünschtes Ergebnis: """${requested}"""
 
-Struktur (nur Fließtext; keine Anrede/Gruß/Kopf/Fuß):
-1) Einleitung mit Bezug auf Datum/Aktenzeichen und fristgerechtem Widerspruch.
-2) Sachverhalt aus meiner Sicht, verständlich und knapp.
-3) Individuelle Begründung: meine Worte aufgreifen; 1–2 Sätze einfache rechtliche Einordnung (z. B. Nachvollziehbarkeit, Verhältnismäßigkeit, fehlerfreie Berechnung).
-4) Antrag (Aufhebung/Neuberechnung/Erstattung etc.).
-5) Frist: 14 Tage (Wochenende/Feiertag → nächster Werktag), Bitte um Eingangsbestätigung.
+        Struktur (reiner Fließtext, keine Markdown-Syntax):
+        1) Sachverhalt (kurz, geordnet, mit Aktenzeichen/Datum).
+        2) Rechtliche Würdigung mit präzisen Normzitaten (z.B. § 280 Abs. 1 BGB; § 241 Abs. 2 BGB; § 249 BGB; § 254 BGB; § 823, § 831 BGB – je nach Fall) und, falls relevant, technische Normen (DIN/Regelwerke) mit rechtlicher Einordnung.
+        3) Anspruchsprüfung: Tatbestandsmerkmale – Subsumtion – Ergebnis (warum Anspruch besteht/ scheitert).
+        4) Antizipierte Gegenargumente (Mitverschulden, Pflichtenkreise, Kausalität etc.) und Entkräftung mit Quellen.
+        5) Ergebnis/Rechtsfolge und konkreter Antrag mit Frist (14 Tage ab heute, Datum nennen; Rechtsfolgenhinweis).
+        6) Kurze Quellenliste „Stand: ${new Date().toLocaleDateString('de-DE')}“ mit belastbaren Fundstellen (Gesetze/Urteile) inkl. Kurz-Links.
 
-Variabilität: keine generischen Füllsätze; natürlich formulieren; 320–520 Wörter.
-Ergebnis: nur den Fließtext (Deutsch).`;
+        Anforderungen:
+        - Keine weichen Formulierungen, keine „Bitte“-Töne.
+        - Subsumtion statt Behauptung.
+        - Aktualität der Rechtslage berücksichtigen.
+        - Länge: 380–700 Wörter.
+        Ausgabe: nur der Fließtext (Deutsch).`;
         setGenProgress(65);
         const llmText = await InvokeLLM({ prompt });
         finalText = typeof llmText === "string" ? llmText : (llmText?.text || "");
