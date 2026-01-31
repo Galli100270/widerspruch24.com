@@ -317,9 +317,9 @@ export default function Layout({ children, currentPageName }) {
               --on-primary: #ffffff;
 
               /* Glass with stronger contrast */
-              --glass-bg: rgba(15, 23, 42, 0.55);
-              --glass-border: rgba(148, 163, 184, 0.28);
-              --glass-shadow: 0 16px 40px rgba(2,6,23,0.35);
+              --glass-bg: rgba(30, 41, 59, 0.45);
+              --glass-border: rgba(148, 163, 184, 0.35);
+              --glass-shadow: 0 16px 40px rgba(2,6,23,0.25);
               --legal-font-scale: 1;
             }
             @media (prefers-color-scheme: dark){
@@ -329,14 +329,14 @@ export default function Layout({ children, currentPageName }) {
                 --border: rgba(148,163,184,0.22);
                 --ink: #e6eaf2;
                 --ink-muted: #9aa4b2;
-                --glass-bg: rgba(15, 23, 42, 0.55);
-                --glass-border: rgba(148, 163, 184, 0.28);
+                --glass-bg: rgba(30, 41, 59, 0.45);
+                --glass-border: rgba(148, 163, 184, 0.35);
               }
             }
             @media (prefers-reduced-motion: reduce){
               * { animation: none !important; transition: none !important; }
             }
-            body { font-size: var(--step-0); line-height: 1.65; background-color: #0b0c0e; color: #fff; }
+            body { font-size: var(--step-0); line-height: 1.65; background-color: #111827; color: #fff; }
 
             /* RTL-Unterstützung: globale Schrift + Ausrichtung */
             [dir="rtl"] {
@@ -387,7 +387,7 @@ export default function Layout({ children, currentPageName }) {
               max-width: 100%;
             }
             @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-              .glass, .panel, .case-card, .pricing-card { background: rgba(15,23,42,0.85); }
+              .glass, .panel, .case-card, .pricing-card { background: rgba(30,41,59,0.75); }
             }
 
             .panel *, .case-card *, .pricing-card * { -webkit-mask-image: -webkit-radial-gradient(white, black); }
@@ -422,7 +422,7 @@ export default function Layout({ children, currentPageName }) {
             .fab > button, .fab .fab-btn { width: var(--fab-size); height: var(--fab-size); box-shadow: 0 8px 24px rgba(0,0,0,.18); border-radius: 9999px; }
 
             /* Background visuals */
-            .gradient-bg { background: radial-gradient(1200px 600px at 50% -50%, #1e293b 10%, #111827 60%, #0b0c0e 100%); }
+            .gradient-bg { background: radial-gradient(1200px 600px at 50% -50%, #334155 10%, #1f2937 60%, #111827 100%); }
             .floating { animation: floating 8s ease-in-out infinite; }
             @keyframes floating { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-18px); } }
 
@@ -485,9 +485,9 @@ export default function Layout({ children, currentPageName }) {
           <div className="fixed inset-0 gradient-bg"></div>
 
           <div className="fixed inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-10 left-20 w-80 h-80 bg-indigo-900/40 rounded-full blur-3xl floating"></div>
-            <div className="absolute top-1/2 -right-20 w-96 h-96 bg-blue-900/30 rounded-full blur-3xl floating" style={{animationDelay: '-2s'}}></div>
-            <div className="absolute bottom-10 left-1/3 w-80 h-80 bg-slate-800/40 rounded-full blur-3xl floating" style={{animationDelay: '-4s'}}></div>
+            <div className="absolute top-10 left-20 w-80 h-80 bg-indigo-700/30 rounded-full blur-3xl floating"></div>
+            <div className="absolute top-1/2 -right-20 w-96 h-96 bg-blue-700/25 rounded-full blur-3xl floating" style={{animationDelay: '-2s'}}></div>
+            <div className="absolute bottom-10 left-1/3 w-80 h-80 bg-slate-600/30 rounded-full blur-3xl floating" style={{animationDelay: '-4s'}}></div>
           </div>
 
           <nav className="relative z-50 p-4">
