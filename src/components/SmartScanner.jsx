@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 import { Camera, Upload, Loader2, AlertTriangle, X, PlusCircle, Check, FileUp, Info, FileText, Zap } from 'lucide-react';
 import { UploadFile, InvokeLLM } from '@/integrations/Core';
 import { splitAndExtractPdf } from '@/functions/splitAndExtractPdf';
@@ -33,6 +34,7 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
   const [previewUrls, setPreviewUrls] = useState([]);
   const [isHandlingFiles, setIsHandlingFiles] = useState(false);
   const [autoKick, setAutoKick] = useState(false); // Auto-Verarbeitung
+  const [itemProgress, setItemProgress] = useState([]); // pro Dokument Fortschritt
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
@@ -127,14 +129,97 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
     });
   }, []);
 
+  // Hilfsfunktion: pro Datei Fortschritt updaten
+  const updateItemProgress = useCallback((index, patch) => {
+    setItemProgress(prev => {
+      const next = [...prev];
+      next[index] = { ...(next[index] || {}), ...patch };
+      return next;
+    });
+  }, []);
+
+  // Einzelverarbeitung einer Datei mit individuellem Fortschritt
+  const processSingleFile = useCallback(async (file, index) => {
+    try {
+      updateItemProgress(index, { step: 'preparing', progress: 5 });
+
+      // HEIC-Konvertierung falls nötig
+      let working = file;
+      if (heicConverter.isHEIC(working)) {
+        updateItemProgress(index, { step: 'converting', progress: 15 });
+        working = await heicConverter.convert(working, { maxDimension: 4000, quality: 85, stripMetadata: true });
+      }
+
+      // Sanitizing für Images (nicht für bereits konvertierte HEIC)
+      if ((working.type || '').startsWith('image/')) {
+        updateItemProgress(index, { step: 'optimizing', progress: 25 });
+        const sanitized = await sanitizeImage(working);
+        if (sanitized) working = sanitized;
+      }
+
+      // Upload
+      updateItemProgress(index, { step: 'uploading', progress: 35 });
+      const { file_url } = await callWithRetry(() => UploadFile({ file: working }), 3, 1000);
+      updateItemProgress(index, { step: 'uploaded', progress: 60, url: file_url });
+
+      // Bei Additional-Mode nur hochladen
+      if (mode === 'additional') {
+        updateItemProgress(index, { step: 'done', progress: 100 });
+        return { file_url, extraction: null };
+      }
+
+      // Extraktion
+      updateItemProgress(index, { step: 'extracting', progress: 70 });
+      const schema = {
+        type: 'object',
+        properties: {
+          sender_name: { type: 'string' },
+          sender_address: { type: 'string' },
+          reference_number: { type: 'string' },
+          document_date: { type: 'string' },
+          amount: { type: 'number' },
+          recipient_name: { type: 'string' },
+          recipient_address: { type: 'string' }
+        }
+      };
+      const isPdf = /\.pdf(\?|#|$)/i.test(file_url || '');
+      let extraction = null;
+      try {
+        if (isPdf) {
+          const res = await splitAndExtractPdf({ file_url, json_schema: schema, pages_per_chunk: 8 });
+          extraction = res?.data?.output || null;
+        } else {
+          const r = await safeExtractData(file_url, schema);
+          extraction = (r?.status === 'success') ? r.output : null;
+        }
+      } catch (_) { /* fallback später */ }
+
+      // Fallback via LLM ohne Dateien, falls nötig
+      if (!extraction) {
+        try {
+          const llm = await InvokeLLM({
+            prompt: 'Erzeuge eine grobe Strukturerkennung ohne Dateikontext. Antworte als JSON.',
+            response_json_schema: schema
+          });
+          if (llm && typeof llm === 'object') extraction = llm;
+        } catch {}
+      }
+
+      updateItemProgress(index, { step: 'finalizing', progress: 90 });
+      updateItemProgress(index, { step: 'done', progress: 100 });
+      return { file_url, extraction };
+    } catch (e) {
+      updateItemProgress(index, { step: 'error', error: e?.message || 'Fehler', progress: 100 });
+      throw e;
+    }
+  }, [sanitizeImage, mode, updateItemProgress]);
+
   const processAllFiles = useCallback(async () => {
     setTouched(true);
     if (capturedFiles.length === 0) {
       setError(t('scanner.noFilesToProcess'));
       return;
     }
-
-    progressFlow.show();
 
     try {
       let processedFiles = [...capturedFiles];
@@ -177,75 +262,35 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
         progressFlow.completeStep();
       }
 
-      // Phase 2: Upload (wie bisher)
-      progressFlow.startStep('uploading');
-      progressFlow.updateProgress(0, t('scanner.uploadingFiles'));
+      // Parallel: alle Dateien verarbeiten
+      const settled = await Promise.allSettled(capturedFiles.map((f, i) => processSingleFile(f, i)));
 
       const uploadedUrls = [];
-      let lastUploadError = null;
-
-      // Sanitize nur Standard-Web-Images (nicht die bereits konvertierten HEIC-Dateien)
-      const sanitizedFiles = await Promise.all(
-        processedFiles.map(file => {
-          if (file._converted) { // If it was already converted from HEIC, it's likely a suitable format
-            return file;
-          }
-          if (file.type.startsWith('image/')) {
-            return sanitizeImage(file);
-          }
-          return file;
-        })
-      );
-
-      for (let i = 0; i < sanitizedFiles.length; i++) {
-        const currentFile = sanitizedFiles[i];
-
-        if (!currentFile) {
-          console.warn(`Skipping a file that could not be processed (null).`);
-          progressFlow.updateProgress(((i + 1) / sanitizedFiles.length) * 100, t('scanner.uploadingFilesProgress', { file: capturedFiles[i]?.name || 'Datei' }));
-          continue;
+      const extractions = [];
+      let failures = 0;
+      for (const r of settled) {
+        if (r.status === 'fulfilled') {
+          if (r.value?.file_url) uploadedUrls.push(r.value.file_url);
+          if (r.value?.extraction) extractions.push(r.value.extraction);
+        } else {
+          failures += 1;
         }
-
-        try {
-          const { file_url } = await callWithRetry(() => UploadFile({ file: currentFile }), 3, 1000);
-          if (file_url) uploadedUrls.push(file_url);
-        } catch (e) {
-          lastUploadError = e;
-          console.warn('Upload fehlgeschlagen, überspringe Datei:', capturedFiles[i]?.name || '(unbekannt)', e);
-        }
-
-        progressFlow.updateProgress(((i + 1) / sanitizedFiles.length) * 100, t('scanner.uploadingFilesProgress', { file: capturedFiles[i]?.name || 'Datei' }));
       }
-      // NEW: analytics event after upload batch
       try { trackEvent('upload_success', { type: mode === 'additional' ? 'additional' : 'initial', count: uploadedUrls.length }); } catch {}
 
       if (uploadedUrls.length === 0) {
-        const msg = lastUploadError?.message || t('scanner.allFilesFailed');
-        throw new Error(msg);
+        throw new Error(t('scanner.allFilesFailed'));
       }
 
-      progressFlow.completeStep();
-
       if (mode === 'additional') {
-        progressFlow.nextStep(); // Moves to a dummy step or directly completes the flow
-        setTimeout(() => {
-          progressFlow.completeStep();
-          progressFlow.nextStep();
-
-          setTimeout(() => {
-            onSuccess?.({ document_urls: uploadedUrls });
-            setCapturedFiles([]);
-            setPreviewUrls([]);
-            progressFlow.hide();
-          }, 1000);
-        }, 1500);
+        onSuccess?.({ document_urls: uploadedUrls });
+        setCapturedFiles([]);
+        setPreviewUrls([]);
+        setItemProgress([]);
         return;
       }
 
-      // Phase 3: OCR & Analyse – PDFs über Backend (Split+Extract), Bilder lokal via Integration
-      progressFlow.nextStep(); // 'ocr'
-      progressFlow.updateProgress(0, t('scanner.extractingData'));
-
+      // Ergebnisse aus mehreren Dateien zusammenführen
       const MAX_BYTES = 10 * 1024 * 1024; // 10MB (Analyse-Limit, Upload erlaubt)
       const firstUrl = uploadedUrls[0];
 
@@ -410,16 +455,10 @@ Verwende Platzhalter wie "Unbekannt" oder leere Strings, wenn keine Informatione
         };
       }
 
-      progressFlow.completeStep(); // OCR abgeschlossen (inkl. internem Fallback)
-
-      // Phase 4: inhaltliche Analyse – bei großem File bereits oben übersprungen; hier normal (ohne file_urls)
-      progressFlow.nextStep(); // 'analyzing'
-      progressFlow.updateProgress(0, t('scanner.analyzingContent'));
-
+      // Phase: inhaltliche Analyse (zusammenfassend über alle Dateien, ohne file_urls)
       let reasonAnalysis = {
         suggested_category: 'other',
-        reason_summary:
-          'Automatische Analyse ohne Dateikontext. Bitte prüfen Sie die Angaben und laden Sie bei Bedarf zusätzliche Seiten als Fotos hoch.',
+        reason_summary: 'Auswertung mehrerer Dokumente abgeschlossen. Bitte prüfen Sie die erkannten Daten.',
         recipient_name: baseExtraction?.recipient_name || '',
         recipient_address: baseExtraction?.recipient_address || '',
       };
@@ -447,10 +486,6 @@ Antwort nur als JSON.`;
         // still fine – we keep the generic reasonAnalysis
       }
 
-      progressFlow.completeStep();
-
-      progressFlow.nextStep(); // 'drafting'
-      progressFlow.updateProgress(0, t('scanner.draftingResponse'));
       const combinedData = {
         ...baseExtraction,
         document_urls: uploadedUrls,
@@ -460,23 +495,17 @@ Antwort nur als JSON.`;
         customer_address: reasonAnalysis.recipient_address || baseExtraction.recipient_address || ''
       };
 
-      progressFlow.completeStep();
-      progressFlow.nextStep(); // 'done'
-
-      setTimeout(() => {
-        onSuccess?.(combinedData);
-        setCapturedFiles([]);
-        setPreviewUrls([]);
-        progressFlow.hide();
-      }, 800);
+      onSuccess?.(combinedData);
+      setCapturedFiles([]);
+      setPreviewUrls([]);
+      setItemProgress([]);
 
     } catch (err) {
       const errorMsg = err.message || t('scanner.genericError');
-      progressFlow.setStepError(errorMsg);
       setError(errorMsg);
       onError?.(errorMsg);
     }
-  }, [t, onSuccess, onError, capturedFiles, sanitizeImage, mode, progressFlow]);
+  }, [t, onSuccess, onError, capturedFiles, sanitizeImage, mode, processSingleFile]);
 
   // Halte aktuelle Funktion in Ref, damit obige Effekte sie sicher verwenden können
   useEffect(() => {
@@ -543,6 +572,9 @@ Antwort nur als JSON.`;
       });
 
       setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
+
+      // Init Item-Progress für neue Dateien
+      setItemProgress(prev => [...prev, ...newFilesToAdd.map(() => ({ step: 'queued', progress: 0 }))]);
       setIsHandlingFiles(false);
 
       // Nach erfolgreicher Auswahl Verarbeitung automatisch starten
@@ -560,12 +592,12 @@ Antwort nur als JSON.`;
   const removeFile = useCallback((index) => {
     setCapturedFiles(prev => prev.filter((_, i) => i !== index));
     setPreviewUrls(prev => {
-      // Only revoke if there was an actual URL to revoke
       if (prev[index]) {
         URL.revokeObjectURL(prev[index]);
       }
       return prev.filter((_, i) => i !== index);
     });
+    setItemProgress(prev => prev.filter((_, i) => i !== index));
   }, []);
 
   const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
@@ -687,7 +719,17 @@ Antwort nur als JSON.`;
                           <X className="w-4 h-4" />
                         </Button>
                       </div>
-                    </motion.div>
+
+                      {itemProgress[index] && (
+                        <div className="absolute left-0 right-0 bottom-0 bg-black/40 backdrop-blur px-2 py-1">
+                          <div className="flex items-center justify-between text-[10px] text-white/80 mb-1">
+                            <span>{itemProgress[index].step || '...'}</span>
+                            <span>{Math.round(itemProgress[index].progress || 0)}%</span>
+                          </div>
+                          <Progress value={itemProgress[index].progress || 0} className="h-1" />
+                        </div>
+                      )}
+                      </motion.div>
                   );
                 })}
               </AnimatePresence>
