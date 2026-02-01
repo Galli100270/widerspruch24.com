@@ -27,6 +27,7 @@ const ACCEPTED_FORMATS = [
 
 const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 * 1024 * 1024, mode = 'initial', autoProcess = true }) => {
   const [error, setError] = useState('');
+  const [touched, setTouched] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [capturedFiles, setCapturedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
@@ -127,6 +128,7 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
   }, []);
 
   const processAllFiles = useCallback(async () => {
+    setTouched(true);
     if (capturedFiles.length === 0) {
       setError(t('scanner.noFilesToProcess'));
       return;
@@ -485,6 +487,7 @@ Antwort nur als JSON.`;
     if (!filesList || filesList.length === 0) return;
 
     setError('');
+    setTouched(true);
     setIsHandlingFiles(true);
 
     const newFilesToAdd = [];
