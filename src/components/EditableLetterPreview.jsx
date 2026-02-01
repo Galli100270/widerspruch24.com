@@ -267,6 +267,16 @@ const EditableLetterPreview = ({
 
   const currentDate = format(new Date(), 'd. MMMM yyyy', { locale: dateLocale });
 
+  // Derived defaults for subject/greeting/closing used in non-full-letter mode
+  const docDate = formatSafeDate(caseData?.document_date);
+  const ref = caseData?.reference_number || '';
+  const _subject = t ? t('letterSubject', { date: docDate, reference: ref }) : '';
+  const subjectText = _subject && _subject !== 'letterSubject' ? _subject : `Widerspruch gegen Bescheid vom ${docDate}${ref ? ` – AZ: ${ref}` : ''}`;
+  const _greet = t ? t('letterGreeting') : '';
+  const greetingText = _greet && _greet !== 'letterGreeting' ? _greet : 'Sehr geehrte Damen und Herren,';
+  const _close = t ? t('letterClosing') : '';
+  const closingText = _close && _close !== 'letterClosing' ? _close : 'Mit freundlichen Grüßen';
+
   // Guard render after all hooks are defined to keep hook order stable
   if (!caseData) return null;
 
