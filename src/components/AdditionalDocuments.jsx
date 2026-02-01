@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, FileText, X, Plus } from 'lucide-react';
-import SmartScanner from './SmartScanner';
+// SmartScanner entfernt (Clean Rebuild)
 import { Badge } from '@/components/ui/badge';
 
 export default function AdditionalDocuments({ t, caseData, onDocumentsAdded, existingDocuments = [] }) {
