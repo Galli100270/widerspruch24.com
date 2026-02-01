@@ -481,11 +481,8 @@ Antwort nur als JSON.`;
           }));
         }
 
-        const fileType = (fileToProcess.type || '').toLowerCase();
-        const isTextBased = ['text/plain', 'message/rfc822', 'application/vnd.ms-outlook'].includes(fileType);
-        const isSupportedImage = ['image/jpeg', 'image/png', 'image/webp', 'image/tiff'].includes(fileType);
-        const isHEIC = heicConverter.isHEIC(fileToProcess); // NEU: HEIC-Erkennung
-        const isDocument = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text'].includes(fileType);
+        const { isTextBased, isImage: isSupportedImage, isHeic: isHEIC, isPdf, isDocx, isOdt } = detectKind(fileToProcess);
+        const isDocument = isPdf || isDocx || isOdt;
 
         // Hinweis: Große PDFs/DOCs dürfen hochgeladen werden; OCR/Analyse wird später für >10MB sicher übersprungen.
         // (Vorab-Grenzen entfernen, nur globales maxFileSize bleibt aktiv)
@@ -509,7 +506,9 @@ Antwort nur als JSON.`;
         if (isSupportedImage || isHEIC || isDocument) { // NEU: HEIC erlaubt
           newFilesToAdd.push(fileToProcess);
         } else {
-          throw new Error(t('scanner.invalidFileTypeDetailed', { type: fileType }));
+          const ext = (fileToProcess.name || '').split('.').pop();
+          const typeLabel = ext ? `.${ext.toLowerCase()}` : (fileToProcess.type || 'unknown');
+          throw new Error(t('scanner.invalidFileTypeDetailed', { type: typeLabel }));
         }
       }
 
@@ -607,8 +606,13 @@ Antwort nur als JSON.`;
                 {previewUrls.map((url, index) => {
                   const file = capturedFiles[index];
                   const isHEIC = file && heicConverter.isHEIC(file);
-                  // Ein Bild ist renderbar, wenn es eine gültige Preview-URL hat UND kein HEIC ist
-                  const isRenderableImage = url && file && !isHEIC && ['image/jpeg', 'image/png', 'image/webp'].includes(file.type.toLowerCase());
+                  // Ein Bild ist renderbar, wenn es eine gültige Preview-URL hat UND kein HEIC ist (MIME oder Endung)
+                  const ext = (file?.name || '').toLowerCase().slice((file?.name || '').lastIndexOf('.'));
+                  const isPdfFile = !!file && ((file.type && file.type.toLowerCase() === 'application/pdf') || ext === '.pdf');
+                  const isRenderableImage = url && file && !isHEIC && (
+                   (file.type && ['image/jpeg','image/png','image/webp'].includes(file.type.toLowerCase())) ||
+                   ['.jpg','.jpeg','.png','.webp'].includes(ext)
+                  );
 
                   return (
                     <motion.div
@@ -625,7 +629,7 @@ Antwort nur als JSON.`;
                           alt={`${mode === 'additional' ? t('scanner.document') : t('scanner.page')} ${index + 1}`}
                           className="object-cover w-full h-full shadow-md bg-white"
                         />
-                      ) : file && file.type === 'application/pdf' && url ? (
+                      ) : isPdfFile && url ? (
                         <iframe
                           src={`${url}#page=1&zoom=page-width`}
                           title={`PDF ${index + 1}`}
