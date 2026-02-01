@@ -14,14 +14,15 @@ import { callWithRetry } from '@/components/lib/network';
 import { getRemoteFileSize } from '@/components/lib/files';
 
 // Define accepted file types - HEIC wieder hinzugefügt mit Auto-Konvertierung
+// Ergänzt um Dateiendungen – einige Browser liefern bei PDF/DOCX keinen MIME-Type
 const ACCEPTED_FORMATS = [
-  'application/pdf',
-  'image/jpeg', 'image/png', 'image/webp', 'image/tiff', 'image/heic', 'image/heif', // HEIC/HEIF wieder erlaubt
-  'text/plain',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
-  'application/vnd.oasis.opendocument.text', // odt
-  'message/rfc822', // .eml
-  'application/vnd.ms-outlook' // .msg
+  'application/pdf', '.pdf',
+  'image/jpeg', 'image/png', 'image/webp', 'image/tiff', 'image/heic', 'image/heif', '.jpg', '.jpeg', '.png', '.webp', '.tif', '.tiff', '.heic', '.heif',
+  'text/plain', '.txt',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', '.docx',
+  'application/vnd.oasis.opendocument.text', '.odt',
+  'message/rfc822', '.eml',
+  'application/vnd.ms-outlook', '.msg'
 ].join(',');
 
 const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 * 1024 * 1024, mode = 'initial', autoProcess = true }) => {
