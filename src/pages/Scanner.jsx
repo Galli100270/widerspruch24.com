@@ -4,284 +4,197 @@ import { createPageUrl } from "@/utils";
 import { Case } from "@/entities/Case";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { UploadFile } from "@/integrations/Core";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { UploadFile, InvokeLLM } from "@/integrations/Core";
+import { base44 } from "@/api/base44Client";
+import { Loader2, Upload as UploadIcon } from "lucide-react";
 
-// Einfache Fallnummer
-const generateCaseNumber = () => {
-  const prefix = "W24";
-  const timestamp = Date.now().toString(36).slice(-4).toUpperCase();
-  const rnd = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `${prefix}-${timestamp}-${rnd}`;
-};
+import CameraCapture from "@/components/intake/CameraCapture";
+import AnalysisPanel from "@/components/intake/AnalysisPanel";
+import ReasonField from "@/components/intake/ReasonField";
+import { analyzeFiles } from "@/components/intake/analyze";
 
 export default function Scanner({ t, language }) {
   const navigate = useNavigate();
 
-  // Schrittsteuerung
-  const [step, setStep] = useState(1);
+  const [files, setFiles] = useState([]); // {name,url,type}
+  const [analysis, setAnalysis] = useState(null);
+  const [reason, setReason] = useState("");
+  const [tone, setTone] = useState("sachlich");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [step, setStep] = useState(1); // 1: intake, 2: reason
 
-  // Stufe 1: Upload + Dokumenttyp
-  const [files, setFiles] = useState([]); // {name, url, type}
-  const [docType, setDocType] = useState(""); // rechnung|mahnung|bescheid|vertrag|sonstiges
-  const [docTypeUncertain, setDocTypeUncertain] = useState(false);
-
-  // Stufe 2: Strukturierte Felder + Unsicherheit
-  const [form, setForm] = useState({
-    sender_name: "",
-    sender_address: "",
-    recipient_name: "",
-    recipient_address: "",
-    reference_number: "",
-    document_date: "",
-    amount: "",
-    deadline: "",
-    claim_type: "", // Rechnung, Schadenersatz, Gebühr, etc.
-  });
-  const [uncertain, setUncertain] = useState({
-    sender_name: false,
-    recipient_name: false,
-    reference_number: false,
-    document_date: false,
-    amount: false,
-    deadline: false,
-    claim_type: false,
-  });
+  const onCameraShot = async (shot) => {
+    try {
+      const file = new File([shot.blob], `scan_${Date.now()}.jpg`, { type: "image/jpeg" });
+      const { file_url } = await UploadFile({ file });
+      const item = { name: file.name, url: file_url, type: file.type };
+      const next = [...files, item];
+      setFiles(next);
+      await triggerAnalysis(next);
+    } catch {
+      setError("Upload fehlgeschlagen. Bitte erneut versuchen.");
+    }
+  };
 
   const onPickFiles = async (e) => {
     const list = Array.from(e.target.files || []);
     if (!list.length) return;
-
-    setError("");
-    const uploaded = [];
-    for (const f of list) {
-      try {
+    setLoading(true); setError("");
+    try {
+      const uploaded = [];
+      for (const f of list) {
         const { file_url } = await UploadFile({ file: f });
         uploaded.push({ name: f.name, url: file_url, type: f.type || "" });
-      } catch (err) {
-        setError("Upload fehlgeschlagen. Bitte erneut versuchen.");
-        return;
       }
-    }
-    setFiles((prev) => [...prev, ...uploaded]);
+      const next = [...files, ...uploaded];
+      setFiles(next);
+      await triggerAnalysis(next);
+    } catch (e2) {
+      setError("Upload fehlgeschlagen. Bitte erneut versuchen.");
+    } finally { setLoading(false); e.target.value = ''; }
   };
 
-  const removeFile = (idx) => setFiles((prev) => prev.filter((_, i) => i !== idx));
-
-  const goNext = () => {
-    if (!files.length) { setError("Bitte mindestens ein Dokument hochladen – oder manuell ausfüllen."); return; }
-    if (!docType) { setError("Bitte Dokumenttyp auswählen."); return; }
-    setError("");
-    setStep(2);
-  };
-
-  const validatePlausibility = () => {
-    const missing = [];
-    if (!form.sender_name) missing.push("Absender");
-    const hasKey = !!(form.reference_number || form.amount || form.deadline);
-    if (!hasKey) missing.push("Aktenzeichen/Betrag/Frist (mind. eines)");
-    if (!docType) missing.push("Dokumenttyp");
-    return missing;
-  };
-
-  const createCase = async () => {
-    const issues = validatePlausibility();
-    if (issues.length) { setError(`Bitte prüfen: ${issues.join(", ")}`); return; }
-    setError("");
-
-    const payload = {
-      origin: "scanner",
-      case_number: generateCaseNumber(),
-      // Strukturierte Felder
-      sender_name: form.sender_name || "",
-      sender_address: form.sender_address || "",
-      reference_number: form.reference_number || "",
-      document_date: form.document_date || "",
-      amount: form.amount ? parseFloat(form.amount) : null,
-      deadline: form.deadline || undefined,
-      // Dokumente
-      document_urls: files.map((f) => f.url),
-      // Kontext in Analysis (nur intern, kein Output)
-      analysis: {
-        latest: {
-          doc_type: docType,
-          doc_type_uncertain: !!docTypeUncertain,
-          plausibility: {
-            has_sender: !!form.sender_name,
-            has_any_key_field: !!(form.reference_number || form.amount || form.deadline),
-          },
-          uncertainties: { ...uncertain },
-          claim_type: form.claim_type || "",
-          recipient_snapshot: {
-            name: form.recipient_name || "",
-            address: form.recipient_address || "",
-          },
-        },
-      },
-      status: "draft",
-      language: language || "de",
-    };
-
+  const triggerAnalysis = async (list) => {
+    setLoading(true); setError("");
     try {
-      const c = await Case.create(payload);
-      navigate(createPageUrl(`CaseDetails?case_id=${c.id}`));
+      const res = await analyzeFiles(list);
+      setAnalysis(res);
+      setStep(2);
     } catch (e) {
-      setError("Fall konnte nicht angelegt werden. Bitte erneut versuchen.");
-    }
+      setAnalysis({ notes: 'Analyse unsicher/fehlgeschlagen – bitte bessere Aufnahme oder PDF hochladen.' });
+      setStep(2);
+    } finally { setLoading(false); }
   };
 
-  const setF = (k, v) => setForm((p) => ({ ...p, [k]: v }));
-  const setU = (k, v) => setUncertain((p) => ({ ...p, [k]: v }));
+  const submitAndGenerate = async () => {
+    setLoading(true); setError("");
+    try {
+      // 1) Case anlegen (nur strukturierte Daten + Unsicherheiten)
+      const fields = analysis?.fields || {};
+      const casePayload = {
+        origin: "scanner",
+        case_number: `W24-${Date.now().toString(36).toUpperCase()}`,
+        sender_name: fields?.sender_name?.value || "",
+        sender_address: fields?.recipient?.value?.address || "",
+        reference_number: fields?.reference_number?.value || "",
+        document_date: fields?.document_date?.value || new Date().toISOString().slice(0,10),
+        amount: fields?.amount_total?.value || null,
+        deadline: fields?.deadline?.value || undefined,
+        document_urls: files.map(f=>f.url),
+        status: "detailed",
+        language: language || 'de',
+        analysis: {
+          latest: {
+            doc_type: analysis?.document_type || 'Sonstiges',
+            doc_type_uncertain: (analysis?.document_type_confidence||0) < 70,
+            uncertainties: mapUncertainties(fields),
+          }
+        },
+        custom_reason: reason,
+      };
+      const created = await Case.create(casePayload);
+
+      // 2) Automatische Texterstellung (Legal-Pipeline)
+      const payload = {
+        caseId: created.id,
+        objection_details: {
+          main_objection_reason: reason,
+          detailed_reasoning: '',
+          requested_outcome: ''
+        },
+        format: "DIN5008",
+        tone: tone === 'sehr' ? 'sehr_deutlich' : (tone === 'bestimmt' ? 'bestimmt' : 'sachlich')
+      };
+      const res = await base44.functions.invoke('generateLetter', payload);
+      const text = res?.data?.text || res?.data?.letter || res?.data?.content || res?.data?.generated_text || '';
+
+      if (text && text.trim().length > 40) {
+        await Case.update(created.id, { generated_text: text });
+      }
+
+      // 3) Weiter zur Vorschau
+      navigate(createPageUrl(`Preview?case_id=${created.id}`));
+    } catch (e) {
+      setError("Erstellung fehlgeschlagen. Bitte erneut versuchen.");
+    } finally { setLoading(false); }
+  };
 
   return (
     <div className="min-h-screen px-4 py-16">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-white mb-2">Scanner (Neubau)</h1>
-          <p className="text-white/80">Strukturierte Erfassung juristisch relevanter Angaben. Keine automatische Texterzeugung.</p>
+      <div className="max-w-4xl mx-auto space-y-8">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-white mb-2">Scanner / Intake (Neu)</h1>
+          <p className="text-white/80">Foto oder Upload → Sofortanalyse → Begründung → fertiges Schreiben.</p>
         </div>
 
         {error && (
-          <Alert className="glass border-red-500/50 mb-6">
+          <Alert className="glass border-red-500/50">
             <AlertDescription className="text-white">{error}</AlertDescription>
           </Alert>
         )}
 
         {step === 1 && (
-          <div className="glass rounded-3xl p-6 space-y-6">
-            <div>
-              <Label className="text-white mb-2 block">Dokumente hochladen</Label>
-              <input id="docfiles" type="file" multiple className="hidden" onChange={onPickFiles} />
-              <Button variant="outline" className="glass border-white/30 text-white hover:bg-white/10" onClick={() => document.getElementById("docfiles")?.click()}>
-                Dateien auswählen
-              </Button>
-              {files.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  {files.map((f, i) => (
-                    <div key={i} className="flex items-center justify-between text-white/80">
-                      <span>{f.name}</span>
-                      <Button size="sm" variant="ghost" className="text-white/70" onClick={() => removeFile(i)}>Entfernen</Button>
-                    </div>
-                  ))}
-                </div>
-              )}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="glass rounded-2xl p-4">
+              <h3 className="text-white font-semibold mb-3">Kamera</h3>
+              <CameraCapture onCapture={onCameraShot} t={t} />
             </div>
-
-            <div className="grid sm:grid-cols-2 gap-4 items-end">
-              <div>
-                <Label className="text-white mb-2 block">Dokumenttyp</Label>
-                <Select value={docType} onValueChange={(v) => setDocType(v)}>
-                  <SelectTrigger className="glass border-white/30 text-white">
-                    <SelectValue placeholder="Bitte wählen" />
-                  </SelectTrigger>
-                  <SelectContent className="glass border-white/20">
-                    <SelectItem value="rechnung">Rechnung</SelectItem>
-                    <SelectItem value="mahnung">Mahnung</SelectItem>
-                    <SelectItem value="bescheid">Bescheid</SelectItem>
-                    <SelectItem value="vertrag">Vertrag</SelectItem>
-                    <SelectItem value="sonstiges">Sonstiges</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="mt-2 text-white/70 text-sm">
-                  <label className="inline-flex items-center gap-2">
-                    <input type="checkbox" checked={docTypeUncertain} onChange={(e) => setDocTypeUncertain(e.target.checked)} />
-                    <span>Unsicher</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="text-right sm:text-left">
-                <Button onClick={goNext} className="glass text-white border-white/30 hover:glow">Weiter</Button>
-                <Button variant="outline" className="ml-2 glass border-white/30 text-white hover:bg-white/10" onClick={() => setStep(2)}>Manuell ausfüllen</Button>
-              </div>
+            <div className="glass rounded-2xl p-4">
+              <h3 className="text-white font-semibold mb-3">Datei-Upload</h3>
+              <input id="filepick" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.HEIC,.docx,.txt,image/*,application/pdf" className="hidden" onChange={onPickFiles} />
+              <Button onClick={()=>document.getElementById('filepick')?.click()} className="glass text-white border-white/30"><UploadIcon className="w-4 h-4 mr-2" />Dateien auswählen</Button>
+              {files.length>0 && (
+                <div className="mt-4 text-white/80 text-sm">{files.length} Datei(en) gewählt – Analyse startet automatisch…</div>
+              )}
             </div>
           </div>
         )}
 
+        {loading && (
+          <div className="glass rounded-2xl p-4 text-white flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Bitte warten…</div>
+        )}
+
         {step === 2 && (
-          <div className="glass rounded-3xl p-6 space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <Label className="text-white mb-1 block">Absender *</Label>
-                <Input className="glass border-white/30 text-white placeholder-white/60" placeholder="Behörde/Firma" value={form.sender_name} onChange={(e) => setF("sender_name", e.target.value)} />
-                <div className="mt-1 text-white/70 text-xs">
-                  <label className="inline-flex items-center gap-2">
-                    <input type="checkbox" checked={uncertain.sender_name} onChange={(e) => setU("sender_name", e.target.checked)} />
-                    <span>Unsicher</span>
-                  </label>
-                </div>
-              </div>
-              <div>
-                <Label className="text-white mb-1 block">Aktenzeichen/Rechnungsnr.</Label>
-                <Input className="glass border-white/30 text-white placeholder-white/60" value={form.reference_number} onChange={(e) => setF("reference_number", e.target.value)} />
-                <div className="mt-1 text-white/70 text-xs">
-                  <label className="inline-flex items-center gap-2">
-                    <input type="checkbox" checked={uncertain.reference_number} onChange={(e) => setU("reference_number", e.target.checked)} />
-                    <span>Unsicher</span>
-                  </label>
-                </div>
-              </div>
-              <div>
-                <Label className="text-white mb-1 block">Datum</Label>
-                <Input type="date" className="glass border-white/30 text-white" value={form.document_date} onChange={(e) => setF("document_date", e.target.value)} />
-                <div className="mt-1 text-white/70 text-xs">
-                  <label className="inline-flex items-center gap-2">
-                    <input type="checkbox" checked={uncertain.document_date} onChange={(e) => setU("document_date", e.target.checked)} />
-                    <span>Unsicher</span>
-                  </label>
-                </div>
-              </div>
-              <div>
-                <Label className="text-white mb-1 block">Betrag (€)</Label>
-                <Input type="number" step="0.01" className="glass border-white/30 text-white placeholder-white/60" value={form.amount} onChange={(e) => setF("amount", e.target.value)} />
-                <div className="mt-1 text-white/70 text-xs">
-                  <label className="inline-flex items-center gap-2">
-                    <input type="checkbox" checked={uncertain.amount} onChange={(e) => setU("amount", e.target.checked)} />
-                    <span>Unsicher</span>
-                  </label>
-                </div>
-              </div>
-              <div>
-                <Label className="text-white mb-1 block">Frist (optional)</Label>
-                <Input type="date" className="glass border-white/30 text-white" value={form.deadline} onChange={(e) => setF("deadline", e.target.value)} />
-                <div className="mt-1 text-white/70 text-xs">
-                  <label className="inline-flex items-center gap-2">
-                    <input type="checkbox" checked={uncertain.deadline} onChange={(e) => setU("deadline", e.target.checked)} />
-                    <span>Unsicher</span>
-                  </label>
-                </div>
-              </div>
-              <div>
-                <Label className="text-white mb-1 block">Anspruchsart</Label>
-                <Input className="glass border-white/30 text-white placeholder-white/60" placeholder="z. B. Rechnung, Schadenersatz, Gebühr" value={form.claim_type} onChange={(e) => setF("claim_type", e.target.value)} />
-                <div className="mt-1 text-white/70 text-xs">
-                  <label className="inline-flex items-center gap-2">
-                    <input type="checkbox" checked={uncertain.claim_type} onChange={(e) => setU("claim_type", e.target.checked)} />
-                    <span>Unsicher</span>
-                  </label>
-                </div>
-              </div>
-            </div>
+          <div className="space-y-6">
+            <AnalysisPanel analysis={analysis} t={t} />
+            {analysis?.notes && (
+              <div className="glass rounded-2xl p-4 text-yellow-200 text-sm">{analysis.notes}</div>
+            )}
 
-            <div>
-              <Label className="text-white mb-1 block">Empfänger (optional)</Label>
-              <div className="grid md:grid-cols-2 gap-4">
-                <Input className="glass border-white/30 text-white placeholder-white/60" placeholder="Name" value={form.recipient_name} onChange={(e) => setF("recipient_name", e.target.value)} />
-                <Textarea className="glass border-white/30 text-white placeholder-white/60" placeholder="Adresse" rows={3} value={form.recipient_address} onChange={(e) => setF("recipient_address", e.target.value)} />
+            <div className="glass rounded-2xl p-4 space-y-4">
+              <ReasonField value={reason} onChange={setReason} t={t} />
+              <div>
+                <Label className="text-white mb-2 block">Ton</Label>
+                <Select value={tone} onValueChange={(v)=>setTone(v)}>
+                  <SelectTrigger className="glass border-white/30 text-white">
+                    <SelectValue placeholder="Ton wählen" />
+                  </SelectTrigger>
+                  <SelectContent className="glass border-white/20">
+                    <SelectItem value="sachlich">Sachlich</SelectItem>
+                    <SelectItem value="bestimmt">Bestimmt</SelectItem>
+                    <SelectItem value="sehr">Sehr deutlich</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-
-            <div className="flex flex-wrap gap-3 justify-end">
-              <Button variant="outline" className="glass border-white/30 text-white hover:bg-white/10" onClick={() => setStep(1)}>Zurück</Button>
-              <Button className="glass text-white border-white/30 hover:glow" onClick={createCase}>Fall anlegen</Button>
+              <div className="text-right">
+                <Button onClick={submitAndGenerate} disabled={!reason || loading} className="glass text-white border-white/30">Fertiges Schreiben erstellen</Button>
+              </div>
             </div>
           </div>
         )}
       </div>
     </div>
   );
+}
+
+function mapUncertainties(fields){
+  const out = {};
+  for (const [k,v] of Object.entries(fields||{})) {
+    out[k] = (v?.confidence||0) < 70;
+  }
+  return out;
 }
