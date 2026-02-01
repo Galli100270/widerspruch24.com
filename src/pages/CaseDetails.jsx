@@ -21,8 +21,6 @@ import DeadlineCalculator from "@/components/DeadlineCalculator";
 import { base44 } from "@/api/base44Client";
 import CarProgressOverlay from "@/components/CarProgressOverlay";
 import { splitAndExtractPdf } from "@/functions/splitAndExtractPdf";
-import { safeExtractData } from "@/components/lib/ocr";
-const SmartScannerLazy = React.lazy(() => import("../components/SmartScanner"));
 const AdditionalDocumentsLazy = React.lazy(() => import("../components/AdditionalDocuments"));
 import DocumentActions from "@/components/DocumentActions";
 import { trackEvent } from "@/components/lib/analytics";
@@ -572,7 +570,7 @@ TEXT:
             <TabsList className="glass flex flex-wrap">
               <TabsTrigger value="overview">Übersicht</TabsTrigger>
               <TabsTrigger value="documents">Dokumente</TabsTrigger>
-              <TabsTrigger value="scanner">SmartScanner</TabsTrigger>
+
               <TabsTrigger value="letters">Schreiben</TabsTrigger>
               <TabsTrigger value="export">Versand & Export</TabsTrigger>
               <TabsTrigger value="protocol">Protokoll</TabsTrigger>
@@ -840,31 +838,7 @@ TEXT:
               </Suspense>
             </TabsContent>
 
-            <TabsContent value="scanner" className="mt-4">
-              <div className="glass rounded-3xl p-4">
-                <Suspense fallback={<div className="glass rounded-2xl p-4 text-white/80">Scanner lädt…</div>}>
-                  <SmartScannerLazy
-                    t={t}
-                    mode="additional"
-                    onSuccess={async (data) => {
-                      try { trackEvent('scan_done', { caseId, brand: 'widerspruch24' }); } catch {}
-                      const patch = {
-                        document_urls: data.document_urls,
-                        sender_name: data.sender_name || caseData.sender_name,
-                        reference_number: data.reference_number || caseData.reference_number,
-                        document_date: data.document_date || caseData.document_date,
-                        customer_name: data.customer_name || caseData.customer_name,
-                        customer_address: data.customer_address || caseData.customer_address
-                      };
-                      await updateCaseSafe(caseId, patch, caseData);
-                      setCaseData(prev => ({...prev, ...patch}));
-                    }}
-                    onError={() => { /* no-op */ }}
-                    onTextContent={null}
-                  />
-                </Suspense>
-              </div>
-            </TabsContent>
+
 
             <TabsContent value="letters" className="mt-4">
               <div className="flex gap-2 mb-4">

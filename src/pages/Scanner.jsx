@@ -4,368 +4,283 @@ import { createPageUrl } from "@/utils";
 import { Case } from "@/entities/Case";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, ArrowRight, Loader2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import MicrophoneInput from "@/components/MicrophoneInput";
-import SmartScanner from "@/components/SmartScanner";
 import { UploadFile } from "@/integrations/Core";
-import { useGuestSession } from '@/components/hooks/useGuestSession';
-import { callWithRetry } from '@/components/lib/network';
 
-// Hilfsfunktion zur Generierung einer eindeutigen Fallnummer
+// Einfache Fallnummer
 const generateCaseNumber = () => {
-    const prefix = 'W24';
-    const timestamp = Date.now().toString(36).slice(-4).toUpperCase();
-    const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `${prefix}-${timestamp}-${randomPart}`;
+  const prefix = "W24";
+  const timestamp = Date.now().toString(36).slice(-4).toUpperCase();
+  const rnd = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `${prefix}-${timestamp}-${rnd}`;
 };
 
 export default function Scanner({ t, language }) {
-  // Move all hooks to the top of the component to follow the Rules of Hooks
   const navigate = useNavigate();
-  const { guestSession, isGuest, isLoading: guestLoading } = useGuestSession(language);
+
+  // Schrittsteuerung
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
+  const [error, setError] = useState("");
+
+  // Stufe 1: Upload + Dokumenttyp
+  const [files, setFiles] = useState([]); // {name, url, type}
+  const [docType, setDocType] = useState(""); // rechnung|mahnung|bescheid|vertrag|sonstiges
+  const [docTypeUncertain, setDocTypeUncertain] = useState(false);
+
+  // Stufe 2: Strukturierte Felder + Unsicherheit
+  const [form, setForm] = useState({
     sender_name: "",
     sender_address: "",
+    recipient_name: "",
+    recipient_address: "",
     reference_number: "",
     document_date: "",
     amount: "",
-    objection_reason: "",
-    custom_reason: ""
+    deadline: "",
+    claim_type: "", // Rechnung, Schadenersatz, Gebühr, etc.
   });
-  const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [documentUrls, setDocumentUrls] = useState([]);
-  const [isPreparingForm, setIsPreparingForm] = useState(false);
+  const [uncertain, setUncertain] = useState({
+    sender_name: false,
+    recipient_name: false,
+    reference_number: false,
+    document_date: false,
+    amount: false,
+    deadline: false,
+    claim_type: false,
+  });
 
-  // This conditional return is now safe to use after all hooks have been called.
-  if (!t) return null;
+  const onPickFiles = async (e) => {
+    const list = Array.from(e.target.files || []);
+    if (!list.length) return;
 
-  const handleScanSuccess = async (data) => {
-    try {
-      // Map suggested_category to a valid objection_reason enum value
-      const validObjectionReasons = ["incorrect_calculation", "decision_unjustified", "deadline_missed", "formal_error", "other"];
-      let reason = 'other'; // default
-      if (data.suggested_category && validObjectionReasons.includes(data.suggested_category)) {
-        reason = data.suggested_category;
-      } else if (data.suggested_category) {
-        // Fallback for categories not in the simple enum, e.g. factual_error
-        if (data.suggested_category === 'factual_error' || data.suggested_category === 'procedural_error') {
-            reason = 'formal_error';
-        } else if (data.suggested_category === 'legal_basis') {
-            reason = 'decision_unjustified';
-        } else if (data.suggested_category === 'calculation_error') {
-            reason = 'incorrect_calculation';
-        }
+    setError("");
+    const uploaded = [];
+    for (const f of list) {
+      try {
+        const { file_url } = await UploadFile({ file: f });
+        uploaded.push({ name: f.name, url: file_url, type: f.type || "" });
+      } catch (err) {
+        setError("Upload fehlgeschlagen. Bitte erneut versuchen.");
+        return;
       }
-
-      // Handle multi-page documents: SmartScanner can return data.document_urls (array) or data.document_url (single string)
-      const scannedDocumentUrls = data.document_urls || (data.document_url ? [data.document_url] : []);
-      setDocumentUrls(scannedDocumentUrls); // Store the scanned URLs
-
-      const caseData = {
-        origin: "scanner", // REQUIRED: Set origin for scanner-created cases
-        case_number: generateCaseNumber(), // NEU: Fallnummer generieren
-        sender_name: data.sender_name || t('common.unknown'),
-        sender_address: data.sender_address || '',
-        reference_number: data.reference_number || t('common.unknown'),
-        document_date: data.document_date || new Date().toISOString().split('T')[0],
-        amount: data.amount ? parseFloat(data.amount) : null,
-        // Now passing an array of document URLs
-        document_urls: scannedDocumentUrls,
-        objection_reason: reason, // Add required field with mapping
-        objection_categories: data.suggested_category ? [data.suggested_category] : [], // NEU: KI-Vorauswahl
-        custom_reason: data.reason_summary || t('common.reason_from_scan'), // NEU: KI-Zusammenfassung
-        status: "draft",
-        language: language,
-        // NEU: Kundendaten speichern
-        customer_name: data.customer_name || '',
-        customer_address: data.customer_address || '',
-        // Associate with guest session if user is guest
-        ...(isGuest && guestSession ? { guest_session_id: guestSession.id } : {})
-      };
-
-      const newCase = await Case.create(caseData);
-      
-      sessionStorage.setItem(`scan_progress_${newCase.id}`, JSON.stringify({
-        progress: 60, // Changed from 75 to 60
-        timestamp: Date.now(),
-        step: 'scan_completed'
-      }));
-
-      // Redirect to CaseDetails instead of Preview
-      navigate(createPageUrl(`CaseDetails?case_id=${newCase.id}`));
-
-    } catch (err) {
-      console.error("Scanner submit error:", err);
-      setError(t('scanner.submitError'));
     }
+    setFiles((prev) => [...prev, ...uploaded]);
   };
 
-  const handleScanError = (errorMsg) => {
-    setError(errorMsg);
-    setTimeout(() => setError(""), 5000); // Clear error after 5 seconds
-  };
-  
-  const handleTextFile = async (textContent, file) => {
-    setIsPreparingForm(true);
+  const removeFile = (idx) => setFiles((prev) => prev.filter((_, i) => i !== idx));
+
+  const goNext = () => {
+    if (!files.length) { setError("Bitte mindestens ein Dokument hochladen – oder manuell ausfüllen."); return; }
+    if (!docType) { setError("Bitte Dokumenttyp auswählen."); return; }
     setError("");
-    try {
-      const { file_url } = await callWithRetry(() => UploadFile({ file }), 2, 700);
-      // Set documentUrls as an array containing the single uploaded file URL
-      setDocumentUrls([file_url]);
-
-      setFormData(prev => ({
-        ...prev,
-        custom_reason: textContent,
-      }));
-      setStep(2);
-    } catch (err) {
-      setError('Upload fehlgeschlagen (Verbindungsproblem). Bitte erneut versuchen.');
-    } finally {
-      setIsPreparingForm(false);
-    }
+    setStep(2);
   };
 
-  const handleManualEntry = () => setStep(2);
+  const validatePlausibility = () => {
+    const missing = [];
+    if (!form.sender_name) missing.push("Absender");
+    const hasKey = !!(form.reference_number || form.amount || form.deadline);
+    if (!hasKey) missing.push("Aktenzeichen/Betrag/Frist (mind. eines)");
+    if (!docType) missing.push("Dokumenttyp");
+    return missing;
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  const createCase = async () => {
+    const issues = validatePlausibility();
+    if (issues.length) { setError(`Bitte prüfen: ${issues.join(", ")}`); return; }
     setError("");
 
+    const payload = {
+      origin: "scanner",
+      case_number: generateCaseNumber(),
+      // Strukturierte Felder
+      sender_name: form.sender_name || "",
+      sender_address: form.sender_address || "",
+      reference_number: form.reference_number || "",
+      document_date: form.document_date || "",
+      amount: form.amount ? parseFloat(form.amount) : null,
+      deadline: form.deadline || undefined,
+      // Dokumente
+      document_urls: files.map((f) => f.url),
+      // Kontext in Analysis (nur intern, kein Output)
+      analysis: {
+        latest: {
+          doc_type: docType,
+          doc_type_uncertain: !!docTypeUncertain,
+          plausibility: {
+            has_sender: !!form.sender_name,
+            has_any_key_field: !!(form.reference_number || form.amount || form.deadline),
+          },
+          uncertainties: { ...uncertain },
+          claim_type: form.claim_type || "",
+          recipient_snapshot: {
+            name: form.recipient_name || "",
+            address: form.recipient_address || "",
+          },
+        },
+      },
+      status: "draft",
+      language: language || "de",
+    };
+
     try {
-      const caseData = {
-        origin: "scanner", // REQUIRED: Set origin for manual entry cases
-        case_number: generateCaseNumber(), // NEU: Fallnummer generieren
-        ...formData,
-        amount: formData.amount ? parseFloat(formData.amount) : null,
-        // Now passing the stored documentUrls array
-        document_urls: documentUrls,
-        status: "draft",
-        language: language,
-        // Associate with guest session if user is guest
-        ...(isGuest && guestSession ? { guest_session_id: guestSession.id } : {})
-      };
-      
-      const newCase = await Case.create(caseData);
-
-      sessionStorage.setItem(`scan_progress_${newCase.id}`, JSON.stringify({
-        progress: 60, // Changed from 75 to 60
-        timestamp: Date.now(),
-        step: 'form_completed'
-      }));
-
-      // Redirect to CaseDetails instead of Preview
-      navigate(createPageUrl(`CaseDetails?case_id=${newCase.id}`));
-    } catch (err) {
-      setError(t('scanner.submitError'));
-    } finally {
-      setIsSubmitting(false);
+      const c = await Case.create(payload);
+      navigate(createPageUrl(`CaseDetails?case_id=${c.id}`));
+    } catch (e) {
+      setError("Fall konnte nicht angelegt werden. Bitte erneut versuchen.");
     }
   };
 
-  const handleMicrophoneTranscript = (transcript, fieldName = 'custom_reason') => {
-    setFormData(prev => ({
-      ...prev,
-      [fieldName]: prev[fieldName] ? prev[fieldName] + ' ' + transcript : transcript
-    }));
-  };
-
-  const objectionReasons = [
-    "incorrect_calculation",
-    "decision_unjustified",
-    "deadline_missed",
-    "formal_error",
-    "other"
-  ];
-
-  if (guestLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4 py-16">
-        <div className="glass rounded-3xl p-8 text-white text-center space-y-3">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
-          <div>{t('preview.validating')}</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (step === 1) {
-    return (
-      <div className="min-h-screen px-4 py-16">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-white mb-4">{t('scanner.choiceTitle')}</h1>
-            <p className="text-xl text-white/80">{t('scanner.choiceSubtitle')}</p>
-          </div>
-          {error && (
-            <Alert className="glass border-red-500/50 mb-8">
-              <AlertDescription className="text-white">{error}</AlertDescription>
-            </Alert>
-          )}
-          
-          {isPreparingForm && (
-            <div className="glass rounded-3xl p-8 text-white text-center mb-8">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-              {t('scanner.preparingForm')}
-            </div>
-          )}
-
-          <SmartScanner
-            t={t}
-            onSuccess={handleScanSuccess}
-            onError={handleScanError}
-            onTextContent={handleTextFile}
-          />
-
-          <div className="text-center mt-8">
-            <Button
-              onClick={handleManualEntry}
-              variant="outline"
-              className="glass border-white/30 text-white hover:bg-white/10 rounded-2xl px-8 py-4"
-            >
-              <FileText className="w-5 h-5 mr-2" />
-              {t('scanner.manualButton')}
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const setF = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+  const setU = (k, v) => setUncertain((p) => ({ ...p, [k]: v }));
 
   return (
     <div className="min-h-screen px-4 py-16">
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">{t('scanner.formTitle')}</h1>
-          <p className="text-xl text-white/80">
-            {t('scanner.formSubtitleManual')}
-          </p>
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold text-white mb-2">Scanner (Neubau)</h1>
+          <p className="text-white/80">Strukturierte Erfassung juristisch relevanter Angaben. Keine automatische Texterzeugung.</p>
         </div>
+
         {error && (
-          <Alert className="glass border-red-500/50 mb-8">
+          <Alert className="glass border-red-500/50 mb-6">
             <AlertDescription className="text-white">{error}</AlertDescription>
-            </Alert>
+          </Alert>
         )}
-        <form onSubmit={handleSubmit} className="glass rounded-3xl p-8">
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
+
+        {step === 1 && (
+          <div className="glass rounded-3xl p-6 space-y-6">
             <div>
-              <Label htmlFor="sender_name" className="text-white mb-2 block">{t('form.senderName')}</Label>
-              <Input
-                id="sender_name"
-                value={formData.sender_name}
-                onChange={(e) => setFormData({...formData, sender_name: e.target.value})}
-                className="glass border-white/30 text-white placeholder-white/60"
-                placeholder={t('form.senderNamePlaceholder')}
-                required
-              />
+              <Label className="text-white mb-2 block">Dokumente hochladen</Label>
+              <input id="docfiles" type="file" multiple className="hidden" onChange={onPickFiles} />
+              <Button variant="outline" className="glass border-white/30 text-white hover:bg-white/10" onClick={() => document.getElementById("docfiles")?.click()}>
+                Dateien auswählen
+              </Button>
+              {files.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {files.map((f, i) => (
+                    <div key={i} className="flex items-center justify-between text-white/80">
+                      <span>{f.name}</span>
+                      <Button size="sm" variant="ghost" className="text-white/70" onClick={() => removeFile(i)}>Entfernen</Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div>
-              <Label htmlFor="reference_number" className="text-white mb-2 block">{t('form.referenceNumber')}</Label>
-              <Input
-                id="reference_number"
-                value={formData.reference_number}
-                onChange={(e) => setFormData({...formData, reference_number: e.target.value})}
-                className="glass border-white/30 text-white placeholder-white/60"
-                placeholder={t('form.referenceNumberPlaceholder')}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="document_date" className="text-white mb-2 block">{t('form.documentDate')}</Label>
-              <Input
-                id="document_date"
-                type="date"
-                value={formData.document_date}
-                onChange={(e) => setFormData({...formData, document_date: e.target.value})}
-                className="glass border-white/30 text-white"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="amount" className="text-white mb-2 block">{t('form.amount')}</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                value={formData.amount}
-                onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                className="glass border-white/30 text-white placeholder-white/60"
-                placeholder={t('form.amountPlaceholder')}
-              />
+
+            <div className="grid sm:grid-cols-2 gap-4 items-end">
+              <div>
+                <Label className="text-white mb-2 block">Dokumenttyp</Label>
+                <Select value={docType} onValueChange={(v) => setDocType(v)}>
+                  <SelectTrigger className="glass border-white/30 text-white">
+                    <SelectValue placeholder="Bitte wählen" />
+                  </SelectTrigger>
+                  <SelectContent className="glass border-white/20">
+                    <SelectItem value="rechnung">Rechnung</SelectItem>
+                    <SelectItem value="mahnung">Mahnung</SelectItem>
+                    <SelectItem value="bescheid">Bescheid</SelectItem>
+                    <SelectItem value="vertrag">Vertrag</SelectItem>
+                    <SelectItem value="sonstiges">Sonstiges</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="mt-2 text-white/70 text-sm">
+                  <label className="inline-flex items-center gap-2">
+                    <input type="checkbox" checked={docTypeUncertain} onChange={(e) => setDocTypeUncertain(e.target.checked)} />
+                    <span>Unsicher</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="text-right sm:text-left">
+                <Button onClick={goNext} className="glass text-white border-white/30 hover:glow">Weiter</Button>
+                <Button variant="outline" className="ml-2 glass border-white/30 text-white hover:bg-white/10" onClick={() => setStep(2)}>Manuell ausfüllen</Button>
+              </div>
             </div>
           </div>
+        )}
 
-          <div className="mb-6">
-            <Label htmlFor="sender_address" className="text-white mb-2 block">{t('form.senderAddress')}</Label>
-            <Textarea
-              id="sender_address"
-              value={formData.sender_address}
-              onChange={(e) => setFormData({...formData, sender_address: e.target.value})}
-              className="glass border-white/30 text-white placeholder-white/60"
-              placeholder={t('form.senderAddressPlaceholder')}
-              rows={3}
-            />
+        {step === 2 && (
+          <div className="glass rounded-3xl p-6 space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <Label className="text-white mb-1 block">Absender *</Label>
+                <Input className="glass border-white/30 text-white placeholder-white/60" placeholder="Behörde/Firma" value={form.sender_name} onChange={(e) => setF("sender_name", e.target.value)} />
+                <div className="mt-1 text-white/70 text-xs">
+                  <label className="inline-flex items-center gap-2">
+                    <input type="checkbox" checked={uncertain.sender_name} onChange={(e) => setU("sender_name", e.target.checked)} />
+                    <span>Unsicher</span>
+                  </label>
+                </div>
+              </div>
+              <div>
+                <Label className="text-white mb-1 block">Aktenzeichen/Rechnungsnr.</Label>
+                <Input className="glass border-white/30 text-white placeholder-white/60" value={form.reference_number} onChange={(e) => setF("reference_number", e.target.value)} />
+                <div className="mt-1 text-white/70 text-xs">
+                  <label className="inline-flex items-center gap-2">
+                    <input type="checkbox" checked={uncertain.reference_number} onChange={(e) => setU("reference_number", e.target.checked)} />
+                    <span>Unsicher</span>
+                  </label>
+                </div>
+              </div>
+              <div>
+                <Label className="text-white mb-1 block">Datum</Label>
+                <Input type="date" className="glass border-white/30 text-white" value={form.document_date} onChange={(e) => setF("document_date", e.target.value)} />
+                <div className="mt-1 text-white/70 text-xs">
+                  <label className="inline-flex items-center gap-2">
+                    <input type="checkbox" checked={uncertain.document_date} onChange={(e) => setU("document_date", e.target.checked)} />
+                    <span>Unsicher</span>
+                  </label>
+                </div>
+              </div>
+              <div>
+                <Label className="text-white mb-1 block">Betrag (€)</Label>
+                <Input type="number" step="0.01" className="glass border-white/30 text-white placeholder-white/60" value={form.amount} onChange={(e) => setF("amount", e.target.value)} />
+                <div className="mt-1 text-white/70 text-xs">
+                  <label className="inline-flex items-center gap-2">
+                    <input type="checkbox" checked={uncertain.amount} onChange={(e) => setU("amount", e.target.checked)} />
+                    <span>Unsicher</span>
+                  </label>
+                </div>
+              </div>
+              <div>
+                <Label className="text-white mb-1 block">Frist (optional)</Label>
+                <Input type="date" className="glass border-white/30 text-white" value={form.deadline} onChange={(e) => setF("deadline", e.target.value)} />
+                <div className="mt-1 text-white/70 text-xs">
+                  <label className="inline-flex items-center gap-2">
+                    <input type="checkbox" checked={uncertain.deadline} onChange={(e) => setU("deadline", e.target.checked)} />
+                    <span>Unsicher</span>
+                  </label>
+                </div>
+              </div>
+              <div>
+                <Label className="text-white mb-1 block">Anspruchsart</Label>
+                <Input className="glass border-white/30 text-white placeholder-white/60" placeholder="z. B. Rechnung, Schadenersatz, Gebühr" value={form.claim_type} onChange={(e) => setF("claim_type", e.target.value)} />
+                <div className="mt-1 text-white/70 text-xs">
+                  <label className="inline-flex items-center gap-2">
+                    <input type="checkbox" checked={uncertain.claim_type} onChange={(e) => setU("claim_type", e.target.checked)} />
+                    <span>Unsicher</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-white mb-1 block">Empfänger (optional)</Label>
+              <div className="grid md:grid-cols-2 gap-4">
+                <Input className="glass border-white/30 text-white placeholder-white/60" placeholder="Name" value={form.recipient_name} onChange={(e) => setF("recipient_name", e.target.value)} />
+                <Textarea className="glass border-white/30 text-white placeholder-white/60" placeholder="Adresse" rows={3} value={form.recipient_address} onChange={(e) => setF("recipient_address", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3 justify-end">
+              <Button variant="outline" className="glass border-white/30 text-white hover:bg-white/10" onClick={() => setStep(1)}>Zurück</Button>
+              <Button className="glass text-white border-white/30 hover:glow" onClick={createCase}>Fall anlegen</Button>
+            </div>
           </div>
-
-          <div className="mb-6">
-            <Label htmlFor="objection_reason" className="text-white mb-2 block">{t('form.objectionReason')}</Label>
-            <Select
-              value={formData.objection_reason}
-              onValueChange={(value) => setFormData({...formData, objection_reason: value})}
-            >
-              <SelectTrigger className="glass border-white/30 text-white">
-                <SelectValue placeholder={t('form.objectionReasonPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent className="glass border-white/20">
-                {objectionReasons.map((key) => (
-                  <SelectItem
-                    key={key}
-                    value={key}
-                    className="text-white focus:bg-white/10"
-                  >
-                    {t(`objectionReason.${key}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="mb-6">
-            <Label htmlFor="custom_reason" className="text-white mb-2 block">{t('form.customReason')}</Label>
-            <Textarea
-              id="custom_reason"
-              value={formData.custom_reason}
-              onChange={(e) => setFormData({...formData, custom_reason: e.target.value})}
-              className="glass border-white/30 text-white placeholder-white/60"
-              placeholder={t('form.customReasonPlaceholder')}
-              rows={4}
-              required
-            />
-            <MicrophoneInput
-              onTranscript={(transcript) => handleMicrophoneTranscript(transcript, 'custom_reason')}
-              t={t}
-              className="mt-3"
-            />
-          </div>
-
-          <Button
-            type="submit"
-            className="glass text-white border-white/30 hover:glow transition-all duration-300 w-full py-6 rounded-2xl text-lg"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <><Loader2 className="w-5 h-5 mr-2 animate-spin" />{t('form.submittingButton')}</>
-            ) : (
-              <><ArrowRight className="w-5 h-5 mr-2" />{t('form.submitButton')}</>
-            )}
-          </Button>
-        </form>
+        )}
       </div>
     </div>
   );
