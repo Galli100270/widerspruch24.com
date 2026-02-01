@@ -38,6 +38,22 @@ const SmartScanner = ({ t, onSuccess, onError, onTextContent, maxFileSize = 30 *
   const progressFlow = useProgressFlow();
   const processAllFilesRef = useRef(null);
 
+  // MIME-Fallback über Dateiendung (für Browser, die bei DOCX/PDF keinen type setzen)
+  const getExt = (name) => {
+    const m = (name || '').toLowerCase().match(/\.([a-z0-9]+)$/);
+    return m ? `.${m[1]}` : '';
+  };
+  const detectKind = (file) => {
+    const type = (file?.type || '').toLowerCase();
+    const ext = getExt(file?.name || '');
+    const isPdf = type.includes('application/pdf') || ext === '.pdf';
+    const isDocx = type.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document') || ext === '.docx';
+    const isOdt = type.includes('application/vnd.oasis.opendocument.text') || ext === '.odt';
+    const isImage = type.startsWith('image/') || ['.jpg','.jpeg','.png','.webp','.tif','.tiff','.heic','.heif'].includes(ext);
+    const isHeic = heicConverter.isHEIC(file) || ext === '.heic' || ext === '.heif';
+    const isTextBased = type.startsWith('text/') || ext === '.txt' || type === 'message/rfc822' || ext === '.eml' || type === 'application/vnd.ms-outlook' || ext === '.msg';
+    return { isPdf, isDocx, isOdt, isImage, isHeic, isTextBased };
+  };
   useEffect(() => {
     return () => {
       previewUrls.forEach(url => URL.revokeObjectURL(url));
