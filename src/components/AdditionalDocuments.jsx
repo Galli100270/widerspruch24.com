@@ -47,12 +47,8 @@ export default function AdditionalDocuments({ t, caseData, onDocumentsAdded, exi
           </div>
         </CardHeader>
         <CardContent>
-          <SmartScanner
-            t={t}
-            mode="additional"
-            onSuccess={handleScanSuccess}
-            onError={handleScanError}
-          />
+          {/* Scanner wurde vorübergehend entfernt. Upload bitte über die neue Scanner-Seite durchführen. */}
+          <div className="text-white/80">Der alte Scanner wurde deaktiviert. Bitte nutzen Sie die neue Scanner-Seite.</div>
         </CardContent>
       </Card>
     );
