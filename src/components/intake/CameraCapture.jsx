@@ -81,11 +81,11 @@ export default function CameraCapture({ onCapture, t }) {
       )}
       <div className="flex flex-wrap gap-2">
         {!active ? (
-          <Button onClick={startCamera} className="glass text-white border-white/30"><Camera className="w-4 h-4 mr-2" />{t?.('scanner.startCamera') || 'Kamera starten'}</Button>
+          <Button onClick={startCamera} className="h-12 w-full text-base glass border-white/30 text-white"><Camera className="w-5 h-5 mr-2" />{t?.('scanner.startCamera') || 'Kamera starten'}</Button>
         ) : (
           <>
-            <Button onClick={capture} className="glass text-white border-white/30"><Plus className="w-4 h-4 mr-2" />Foto aufnehmen</Button>
-            <Button onClick={stopCamera} variant="outline" className="glass border-white/30 text-white"><RotateCw className="w-4 h-4 mr-2" />Stop</Button>
+            <Button onClick={capture} className="h-12 flex-1 text-base glass border-white/30 text-white"><Plus className="w-5 h-5 mr-2" />Foto aufnehmen</Button>
+            <Button onClick={stopCamera} variant="outline" className="h-12 flex-1 text-base glass border-white/30 text-white"><RotateCw className="w-5 h-5 mr-2" />Stop</Button>
           </>
         )}
       </div>

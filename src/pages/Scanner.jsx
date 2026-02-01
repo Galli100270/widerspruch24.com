@@ -14,6 +14,7 @@ import { Loader2, Upload as UploadIcon } from "lucide-react";
 import CameraCapture from "@/components/intake/CameraCapture";
 import AnalysisPanel from "@/components/intake/AnalysisPanel";
 import ReasonField from "@/components/intake/ReasonField";
+import UploadTile from "@/components/intake/UploadTile";
 import { analyzeFiles } from "@/components/intake/analyze";
 
 export default function Scanner({ t, language }) {
@@ -127,8 +128,8 @@ export default function Scanner({ t, language }) {
     <div className="min-h-screen px-4 py-16">
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-white mb-2">Scanner / Intake (Neu)</h1>
-          <p className="text-white/80">Foto oder Upload → Sofortanalyse → Begründung → fertiges Schreiben.</p>
+          <h1 className="text-4xl font-extrabold text-white tracking-tight mb-2">Scanne oder lade dein Dokument hoch</h1>
+          <p className="text-white/80">Foto oder Upload • wir lesen die wichtigsten Daten aus • du schreibst kurz deine Begründung • fertig.</p>
         </div>
 
         {error && (
@@ -139,18 +140,18 @@ export default function Scanner({ t, language }) {
 
         {step === 1 && (
           <div className="grid md:grid-cols-2 gap-6">
-            <div className="glass rounded-2xl p-4">
+            <div className="rounded-3xl p-4 min-h-[360px] bg-gradient-to-br from-indigo-600/20 to-blue-600/20 border border-white/15">
               <h3 className="text-white font-semibold mb-3">Kamera</h3>
               <CameraCapture onCapture={onCameraShot} t={t} />
+              <p className="mt-3 text-white/70 text-sm">Tipp: helles Licht, gerade halten. Du kannst mehrere Seiten aufnehmen.</p>
             </div>
-            <div className="glass rounded-2xl p-4">
-              <h3 className="text-white font-semibold mb-3">Datei-Upload</h3>
-              <input id="filepick" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.HEIC,.docx,.txt,image/*,application/pdf" className="hidden" onChange={onPickFiles} />
-              <Button onClick={()=>document.getElementById('filepick')?.click()} className="glass text-white border-white/30"><UploadIcon className="w-4 h-4 mr-2" />Dateien auswählen</Button>
-              {files.length>0 && (
-                <div className="mt-4 text-white/80 text-sm">{files.length} Datei(en) gewählt – Analyse startet automatisch…</div>
-              )}
-            </div>
+            <UploadTile
+              title="Datei-Upload"
+              hint="Zieh deine PDF oder Fotos hierher – oder klicke auf Hochladen."
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.HEIC,.docx,.txt,image/*,application/pdf"
+              onSelect={onPickFiles}
+              filesCount={files.length}
+            />
           </div>
         )}
 
