@@ -722,7 +722,7 @@ Antwort nur als JSON.`;
             </div>
           </div>
 
-          {error && !progressFlow.isVisible && (
+          {touched && error && !progressFlow.isVisible && (
             <Alert className="glass border-red-500/50">
               <AlertTriangle className="w-5 h-5 text-red-400" />
               <AlertDescription className="text-white">
