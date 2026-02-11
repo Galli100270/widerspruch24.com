@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, Plus, Trash2, RotateCw, AlertCircle } from "lucide-react";
+import CameraIllustration from "@/components/illustrations/CameraIllustration";
 
 export default function CameraCapture({ onCapture, t }) {
   const videoRef = useRef(null);
@@ -72,23 +73,32 @@ export default function CameraCapture({ onCapture, t }) {
 
   return (
     <div className="space-y-3">
-      <div className="rounded-xl overflow-hidden bg-black/40">
-        <video ref={videoRef} className="w-full h-64 object-contain bg-black" playsInline muted />
-        <canvas ref={canvasRef} className="hidden" />
-      </div>
+      {active ? (
+        <div className="rounded-2xl overflow-hidden bg-black/40">
+          <video ref={videoRef} className="w-full h-64 object-contain bg-black" playsInline muted />
+          <canvas ref={canvasRef} className="hidden" />
+        </div>
+      ) : (
+        <div className="rounded-3xl p-8 bg-gradient-to-br from-indigo-600/25 to-blue-600/25 border border-white/15 flex flex-col items-center justify-center text-center min-h-[260px]">
+          <CameraIllustration className="floating" />
+          <p className="text-white/90 font-medium mt-4">Mach ein klares Foto deines Dokuments</p>
+          <Button onClick={startCamera} className="mt-5 h-12 w-full max-w-xs text-base glass border-white/30 text-white">
+            <Camera className="w-5 h-5 mr-2" />{t?.('scanner.startCamera') || 'Kamera starten'}
+          </Button>
+        </div>
+      )}
+
       {streamError && (
         <div className="text-yellow-300 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" />{streamError}</div>
       )}
-      <div className="flex flex-wrap gap-2">
-        {!active ? (
-          <Button onClick={startCamera} className="h-12 w-full text-base glass border-white/30 text-white"><Camera className="w-5 h-5 mr-2" />{t?.('scanner.startCamera') || 'Kamera starten'}</Button>
-        ) : (
-          <>
-            <Button onClick={capture} className="h-12 flex-1 text-base glass border-white/30 text-white"><Plus className="w-5 h-5 mr-2" />Foto aufnehmen</Button>
-            <Button onClick={stopCamera} variant="outline" className="h-12 flex-1 text-base glass border-white/30 text-white"><RotateCw className="w-5 h-5 mr-2" />Stop</Button>
-          </>
-        )}
-      </div>
+
+      {active && (
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={capture} className="h-12 flex-1 text-base glass border-white/30 text-white"><Plus className="w-5 h-5 mr-2" />Foto aufnehmen</Button>
+          <Button onClick={stopCamera} variant="outline" className="h-12 flex-1 text-base glass border-white/30 text-white"><RotateCw className="w-5 h-5 mr-2" />Stop</Button>
+        </div>
+      )}
+
       {shots.length > 0 && (
         <div className="grid grid-cols-3 gap-2">
           {shots.map((s, i) => (

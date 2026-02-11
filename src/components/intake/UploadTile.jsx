@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { UploadCloud, FileText, Image } from "lucide-react";
+import CloudUploadIllustration from "@/components/illustrations/CloudUploadIllustration";
 
 export default function UploadTile({ title = "Datei-Upload", hint = "Zieh deine PDF oder Fotos hierher – oder klicke auf Hochladen.", accept = "*/*", onSelect, filesCount = 0 }) {
   const inputRef = useRef(null);
@@ -38,8 +39,8 @@ export default function UploadTile({ title = "Datei-Upload", hint = "Zieh deine 
         onDragLeave={(e)=>handleDrag(e,false)}
         onDrop={handleDrop}
       >
-        <UploadCloud className="w-10 h-10 text-white/80 mb-3" />
-        <p className="text-white font-medium">Dateien hierher ziehen</p>
+        <CloudUploadIllustration className="floating" />
+        <p className="text-white font-medium mt-2">Dateien hierher ziehen</p>
         <p className="text-white/70 text-sm mt-1">{hint}</p>
         <div className="flex items-center gap-3 text-white/60 text-xs mt-3">
           <Image className="w-4 h-4" /> JPG • PNG • WEBP • HEIC
