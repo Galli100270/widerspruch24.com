@@ -27,6 +27,13 @@ export default function Scanner({ t, language }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [step, setStep] = useState(1); // 1: intake, 2: reason
+  const analysisRef = React.useRef(null);
+  const goToAnalysis = () => {
+    setStep(2);
+    setTimeout(() => {
+      try { analysisRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
+    }, 60);
+  };
 
   const onCameraShot = async (shot) => {
     try {
@@ -35,6 +42,7 @@ export default function Scanner({ t, language }) {
       const item = { name: file.name, url: file_url, type: file.type };
       const next = [...files, item];
       setFiles(next);
+      goToAnalysis();
       await triggerAnalysis(next);
     } catch {
       setError("Upload fehlgeschlagen. Bitte erneut versuchen.");
@@ -53,6 +61,7 @@ export default function Scanner({ t, language }) {
       }
       const next = [...files, ...uploaded];
       setFiles(next);
+      goToAnalysis();
       await triggerAnalysis(next);
     } catch (e2) {
       setError("Upload fehlgeschlagen. Bitte erneut versuchen.");
@@ -160,7 +169,7 @@ export default function Scanner({ t, language }) {
         )}
 
         {step === 2 && (
-          <div className="space-y-6">
+          <div ref={analysisRef} className="space-y-6">
             <AnalysisPanel analysis={analysis} t={t} />
             {analysis?.notes && (
               <div className="glass rounded-2xl p-4 text-yellow-200 text-sm">{analysis.notes}</div>
