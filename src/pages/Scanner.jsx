@@ -14,6 +14,7 @@ import { Loader2, Upload as UploadIcon } from "lucide-react";
 import CameraCapture from "@/components/intake/CameraCapture";
 import AnalysisPanel from "@/components/intake/AnalysisPanel";
 import ReasonField from "@/components/intake/ReasonField";
+import ReasonAIHelper from "@/components/intake/ReasonAIHelper";
 import UploadTile from "@/components/intake/UploadTile";
 import { analyzeFiles } from "@/components/intake/analyze";
 
@@ -177,6 +178,7 @@ export default function Scanner({ t, language }) {
 
             <div className="glass rounded-2xl p-4 space-y-4">
               <ReasonField value={reason} onChange={setReason} t={t} />
+              <ReasonAIHelper analysis={analysis} value={reason} onChange={setReason} t={t} />
               <div>
                 <Label className="text-white mb-2 block">Ton</Label>
                 <Select value={tone} onValueChange={(v)=>setTone(v)}>
