@@ -1,0 +1,112 @@
+{
+  "name": "GuestSession",
+  "type": "object",
+  "properties": {
+    "token_hash": {
+      "type": "string",
+      "description": "Hash des Guest-Tokens f\u00fcr Wiedererkennung"
+    },
+    "locale": {
+      "type": "string",
+      "enum": [
+        "de",
+        "en"
+      ],
+      "default": "de",
+      "description": "Bevorzugte Sprache des Gastes"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Zeitpunkt der ersten Nutzung"
+    },
+    "ends_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Ablaufzeitpunkt (started_at + 30 Tage)"
+    },
+    "last_seen_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Letzte Aktivit\u00e4t"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "expired",
+        "claimed"
+      ],
+      "default": "active",
+      "description": "Status der Gast-Session"
+    },
+    "email": {
+      "type": "string",
+      "description": "E-Mail falls beim Versand angegeben (optional)"
+    },
+    "free_exports_used": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "description": "Free exports used in current 30d period (guest)"
+    },
+    "free_exports_period_start": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Start of 30d free period for guest"
+    },
+    "apple_sub": {
+      "type": "string",
+      "description": "Apple OIDC subject (falls verkn\u00fcpft w\u00e4hrend Gastmodus)"
+    },
+    "apple_email": {
+      "type": "string",
+      "description": "Apple E-Mail (kann Relay sein)"
+    },
+    "apple_name": {
+      "type": "string",
+      "description": "Von Apple gelieferter Name (nur beim ersten Login)"
+    }
+  },
+  "required": [
+    "token_hash",
+    "locale",
+    "started_at",
+    "ends_at",
+    "last_seen_at",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "token_hash": "{{guest_session.token_hash}}"
+        },
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "write": {
+      "$or": [
+        {
+          "token_hash": "{{guest_session.token_hash}}"
+        },
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": true
+  }
+}

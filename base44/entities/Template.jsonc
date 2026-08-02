@@ -1,0 +1,140 @@
+{
+  "name": "Template",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Stable identifier (e.g., eu261_delay)"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "travel",
+        "rental",
+        "consumer",
+        "telecom",
+        "energy",
+        "service",
+        "subscription",
+        "other"
+      ],
+      "default": "other"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    },
+    "language_support": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "de",
+          "en"
+        ]
+      },
+      "default": [
+        "de",
+        "en"
+      ]
+    },
+    "title_de": {
+      "type": "string"
+    },
+    "title_en": {
+      "type": "string"
+    },
+    "intro_de": {
+      "type": "string"
+    },
+    "intro_en": {
+      "type": "string"
+    },
+    "letter_de": {
+      "type": "string",
+      "description": "DIN-5008 style text with {{placeholders}}"
+    },
+    "letter_en": {
+      "type": "string"
+    },
+    "email_de": {
+      "type": "string"
+    },
+    "email_en": {
+      "type": "string"
+    },
+    "placeholders": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "label_de": {
+            "type": "string"
+          },
+          "label_en": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "string",
+              "email",
+              "date",
+              "number",
+              "iban",
+              "multiline"
+            ]
+          },
+          "required": {
+            "type": "boolean",
+            "default": false
+          },
+          "example_de": {
+            "type": "string"
+          },
+          "example_en": {
+            "type": "string"
+          },
+          "default": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ]
+      }
+    },
+    "frist_default_days": {
+      "type": "integer",
+      "default": 14,
+      "minimum": 7,
+      "maximum": 60
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "title_de",
+    "title_en",
+    "category",
+    "frist_default_days"
+  ],
+  "rls": {
+    "read": true,
+    "write": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

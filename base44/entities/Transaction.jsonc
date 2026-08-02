@@ -1,0 +1,98 @@
+{
+  "name": "Transaction",
+  "type": "object",
+  "properties": {
+    "userEmail": {
+      "type": "string",
+      "description": "E-Mail des Benutzers, der die Transaktion get\u00e4tigt hat."
+    },
+    "stripeSessionId": {
+      "type": "string",
+      "description": "Die ID der Stripe Checkout-Sitzung."
+    },
+    "productName": {
+      "type": "string",
+      "description": "Name des gekauften Produkts (z.B. 'Einzelfall', '5er Paket')."
+    },
+    "amount": {
+      "type": "number",
+      "description": "Betrag in der kleinsten W\u00e4hrungseinheit (z.B. Cent)."
+    },
+    "currency": {
+      "type": "string",
+      "description": "W\u00e4hrung der Transaktion (z.B. 'eur')."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "refunded"
+      ],
+      "default": "completed"
+    },
+    "billingAddress": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "company": {
+          "type": "string"
+        },
+        "street": {
+          "type": "string"
+        },
+        "zip": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        },
+        "vatId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "invoiceNumber": {
+      "type": "string",
+      "description": "Einzigartige, fortlaufende Rechnungsnummer."
+    }
+  },
+  "required": [
+    "userEmail",
+    "stripeSessionId",
+    "productName",
+    "amount",
+    "currency"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "userEmail": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "write": {
+      "$or": [
+        {
+          "userEmail": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

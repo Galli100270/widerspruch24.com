@@ -1,0 +1,67 @@
+{
+  "name": "Evidence",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "description": "Related Case id"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "file_name": {
+      "type": "string"
+    },
+    "file_type": {
+      "type": "string"
+    },
+    "size_bytes": {
+      "type": "integer"
+    },
+    "ocr_data": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "confidence": {
+      "type": "number"
+    },
+    "rotation": {
+      "type": "integer",
+      "description": "EXIF rotation applied",
+      "default": 0
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "case_id",
+    "file_url"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "write": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

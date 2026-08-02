@@ -1,0 +1,270 @@
+{
+  "name": "Letter",
+  "type": "object",
+  "properties": {
+    "language": {
+      "type": "string",
+      "enum": [
+        "de",
+        "en"
+      ],
+      "default": "de",
+      "description": "Sprache des Schreibens"
+    },
+    "template_key": {
+      "type": "string",
+      "description": "Optionaler Schl\u00fcssel f\u00fcr interne Vorlagen, vom Nutzer nicht direkt gesetzt."
+    },
+    "parties": {
+      "type": "object",
+      "properties": {
+        "sender": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "strasse": {
+              "type": "string"
+            },
+            "plz": {
+              "type": "string"
+            },
+            "ort": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string",
+              "format": "email"
+            },
+            "tel": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "strasse",
+            "plz",
+            "ort"
+          ]
+        },
+        "recipient": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "strasse": {
+              "type": "string"
+            },
+            "plz": {
+              "type": "string"
+            },
+            "ort": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string",
+              "format": "email"
+            }
+          },
+          "required": [
+            "name",
+            "strasse",
+            "plz",
+            "ort"
+          ]
+        }
+      },
+      "required": [
+        "sender",
+        "recipient"
+      ]
+    },
+    "facts": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string",
+          "description": "Grund/Sachverhalt"
+        },
+        "months_due": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "amount_total": {
+          "type": "number",
+          "minimum": 0
+        },
+        "due_since_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "iban": {
+          "type": "string"
+        },
+        "zahlungsempfaenger": {
+          "type": "string"
+        },
+        "kundennummer": {
+          "type": "string"
+        },
+        "referenz": {
+          "type": "string"
+        },
+        "frist_tage": {
+          "type": "integer",
+          "minimum": 7,
+          "maximum": 30,
+          "default": 14
+        },
+        "anlagen": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Liste der Anlagen"
+        }
+      },
+      "additionalProperties": false
+    },
+    "shortcodes_raw": {
+      "type": "string",
+      "description": "Original Kurzbefehle-Eingabe des Nutzers"
+    },
+    "shortcodes_parsed": {
+      "type": "object",
+      "description": "Geparste und normalisierte Kurzbefehle",
+      "additionalProperties": true
+    },
+    "draft": {
+      "type": "string",
+      "description": "Vollst\u00e4ndiger Textentwurf (Markdown/Plain)"
+    },
+    "pdf_url": {
+      "type": "string",
+      "description": "URL zur generierten PDF-Datei"
+    },
+    "deadline": {
+      "type": "string",
+      "format": "date",
+      "description": "Fristdatum (falls im Wizard erfasst/berechnet)"
+    },
+    "notify_pref": {
+      "type": "object",
+      "description": "Snapshot der Benachrichtigungsauswahl beim Erstellen",
+      "additionalProperties": true
+    },
+    "email_status": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "sent",
+            "failed"
+          ]
+        },
+        "provider_id": {
+          "type": "string"
+        },
+        "sent_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "error_message": {
+          "type": "string"
+        }
+      }
+    },
+    "payment": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "enum": [
+            "trial",
+            "per_case",
+            "credits",
+            "subscription"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "free",
+            "required",
+            "paid"
+          ],
+          "default": "free"
+        }
+      },
+      "required": [
+        "model",
+        "status"
+      ]
+    },
+    "flags": {
+      "type": "object",
+      "properties": {
+        "disclaimer_accepted": {
+          "type": "boolean",
+          "default": false
+        },
+        "kuendigung_hinweis_akzeptiert": {
+          "type": "boolean"
+        },
+        "content_logging_consent": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "disclaimer_accepted"
+      ]
+    },
+    "guest_session_id": {
+      "type": "string",
+      "description": "ID der zugeh\u00f6rigen Gast-Session (falls ohne Registrierung)"
+    }
+  },
+  "required": [
+    "parties",
+    "facts",
+    "flags"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "guest_session_id": "{{guest_session.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "write": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "guest_session_id": "{{guest_session.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

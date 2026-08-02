@@ -1,0 +1,124 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Stripe Customer ID"
+    },
+    "stripe_subscription_id": {
+      "type": "string",
+      "description": "Stripe Subscription ID (if subscribed)"
+    },
+    "subscription_type": {
+      "type": "string",
+      "enum": [
+        "none",
+        "pro",
+        "business"
+      ],
+      "default": "none",
+      "description": "Current subscription tier"
+    },
+    "subscription_status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "trialing",
+        "past_due",
+        "canceled",
+        "unpaid",
+        "none"
+      ],
+      "default": "none",
+      "description": "Stripe-like status mirror"
+    },
+    "needs_payment": {
+      "type": "boolean",
+      "default": false,
+      "description": "UI flag to show payment required banner"
+    },
+    "export_blocked_reason": {
+      "type": "string",
+      "description": "Reason when subscription exports are blocked"
+    },
+    "monthly_quota": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "description": "Eligible documents per month from subscription"
+    },
+    "monthly_quota_used": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "description": "Used documents for the current month"
+    },
+    "monthly_quota_reset_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When monthly quota resets"
+    },
+    "credits": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "description": "Prepaid credits (e.g., Bundle5)"
+    },
+    "credits_expire_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Credits validity (e.g., +24 months)"
+    },
+    "one_time_exports": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "description": "Exports unlocked by single purchases"
+    },
+    "quota_guards": {
+      "type": "object",
+      "description": "Per-month idempotency guards for subscription allocation (keys like quota_YYYYMM_pro=true)",
+      "additionalProperties": {
+        "type": "boolean"
+      }
+    },
+    "trial_free_exports_used": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "description": "Number of free exports used in current 30d period"
+    },
+    "trial_free_period_start": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Start of the 30d free trial export period"
+    },
+    "apple_sub": {
+      "type": "string",
+      "description": "Apple OIDC subject (stable identifier)"
+    },
+    "apple_email": {
+      "type": "string",
+      "description": "Apple email (can be private relay)"
+    },
+    "apple_email_private": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether email is a private relay"
+    },
+    "apple_linked_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When Apple was linked to this account"
+    }
+  },
+  "required": [
+    "stripe_customer_id",
+    "stripe_subscription_id",
+    "export_blocked_reason",
+    "monthly_quota_reset_at",
+    "credits_expire_at",
+    "quota_guards"
+  ]
+}

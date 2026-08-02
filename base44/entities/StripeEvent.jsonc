@@ -1,0 +1,84 @@
+{
+  "name": "StripeEvent",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "Stripe Event ID (evt_...) for idempotency"
+    },
+    "event_type": {
+      "type": "string",
+      "description": "Event type (checkout.session.completed, invoice.paid, ...)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "seen",
+        "processing",
+        "done",
+        "failed"
+      ],
+      "default": "seen",
+      "description": "Processing status"
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When event was first seen"
+    },
+    "processed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When event was successfully processed"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Stripe session id (if applicable)"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Stripe customer id (if applicable)"
+    },
+    "customer_email": {
+      "type": "string",
+      "description": "Customer email (if available)"
+    },
+    "amount_total": {
+      "type": "integer",
+      "description": "Amount in cents (if applicable)"
+    },
+    "plan_type": {
+      "type": "string",
+      "enum": [
+        "single",
+        "bundle5",
+        "pro",
+        "business",
+        "unknown"
+      ],
+      "description": "Mapped plan type for reporting"
+    },
+    "error_message": {
+      "type": "string",
+      "description": "Error details if failed"
+    }
+  },
+  "required": [
+    "event_id",
+    "event_type",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "write": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": true
+  }
+}
